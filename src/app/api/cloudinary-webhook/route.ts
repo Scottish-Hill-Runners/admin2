@@ -1,0 +1,17 @@
+import { NextResponse } from "next/server";
+import { env } from "@/lib/env";
+import { refreshCache } from "@/lib/asset-cache";
+
+export async function POST(request: Request) {
+  const secret =
+    new URL(request.url).searchParams.get("secret") ??
+    request.headers.get("x-webhook-secret");
+  if (
+    !env.CLOUDINARY_WEBHOOK_SECRET ||
+    secret !== env.CLOUDINARY_WEBHOOK_SECRET
+  )
+    return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+  const payload = (await request.json()) as { notification_type?: string };
+  if (payload.notification_type === "upload") await refreshCache();
+  return NextResponse.json({ ok: true });
+}
