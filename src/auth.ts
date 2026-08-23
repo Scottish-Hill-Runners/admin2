@@ -8,6 +8,29 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientId: env.AUTH_GITHUB_ID,
       clientSecret: env.AUTH_GITHUB_SECRET,
       authorization: { params: { scope: "repo read:user user:email" } },
+      userinfo: {
+        url: "https://api.github.com/user",
+        async request({ tokens }: { tokens: { access_token?: string } }) {
+          const headers = {
+            Authorization: `Bearer ${tokens.access_token}`,
+            "User-Agent": "authjs",
+          };
+          const profile = await fetch("https://api.github.com/user", { headers }).then(
+            (response) => response.json(),
+          );
+          if (!profile.email) {
+            const response = await fetch("https://api.github.com/user/emails", { headers });
+            // GitHub Apps without the "Email addresses" permission return an empty list here.
+            if (response.ok) {
+              const emails = await response.json();
+              profile.email = Array.isArray(emails)
+                ? (emails.find((email: { primary: boolean }) => email.primary) ?? emails[0])?.email
+                : undefined;
+            }
+          }
+          return profile;
+        },
+      },
     }),
   ],
   session: { strategy: "jwt" },

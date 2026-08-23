@@ -9,7 +9,7 @@ import {
 } from "@/lib/email-parse";
 import { getReceivedEmail } from "@/lib/resend";
 import { ensureStagingBranch, getFile, commitFiles } from "@/lib/github";
-import { setStatus, type EmailStatus } from "@/lib/email-status";
+import { updateStatus, type EmailStatus } from "@/lib/email-status";
 import { csvFromEmail } from "@/lib/csv-source";
 import { uploadEmailAsset } from "@/lib/blob-upload";
 
@@ -25,22 +25,18 @@ export async function updateEmailStatus(
   const admin = await requireAdmin();
   const id = String(formData.get("emailId") ?? "");
   const status = String(formData.get("status") ?? "") as EmailStatus;
-  if (!id || !["declined", "no-action", "junk"].includes(status))
-    return { status: "error", message: "Please choose a valid action." };
+  if (!id)
+    return { status: "error", message: "emailID is required." };
   try {
     const email = await getReceivedEmail(id);
     if (status === "junk") {
       const { addSuppression } = await import("@/lib/resend");
       await addSuppression(email.from);
     }
-    await setStatus(id, status, {
-      login: admin.user.login,
-      name: admin.user.name,
-    });
+    await updateStatus(id, status, admin.user.name ?? admin.user.login);
     return {
       status: "success",
-      message:
-        status === "no-action" ? "Marked as no action needed." : "Saved.",
+      message: "Saved.",
     };
   } catch (error) {
     console.error(
@@ -61,16 +57,14 @@ export async function approveEmail(
   const admin = await requireAdmin();
   const id = String(formData.get("emailId") ?? "");
   const editedContent = String(formData.get("content") ?? "");
-  if (!id) return { status: "error", message: "There is no email to approve." };
+  if (!id)
+    return { status: "error", message: "There is no email to approve." };
   try {
     const email = await getReceivedEmail(id);
     const update = classifyEmail(email.text ?? "");
     if (update.kind === "blob-upload") {
       await uploadEmailAsset(email);
-      await setStatus(id, "approved", {
-        login: admin.user.login,
-        name: admin.user.name,
-      });
+      await updateStatus(id, "approved", admin.user.name ?? admin.user.login);
       return { status: "success", message: "Asset saved." };
     }
     if (
@@ -102,10 +96,7 @@ export async function approveEmail(
       [{ path: update.path, content, sha: current?.sha }],
       `Update ${update.path} via admin review`,
     );
-    await setStatus(id, "approved", {
-      login: admin.user.login,
-      name: admin.user.name,
-    });
+    await updateStatus(id, "approved", admin.user.name ?? admin.user.login);
     return { status: "success", message: "Saved to the draft updates." };
   } catch (error) {
     console.error(

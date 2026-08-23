@@ -26,6 +26,7 @@ const envSchema = z
     CLOUDINARY_API_KEY: optional,
     CLOUDINARY_API_SECRET: optional,
     CLOUDINARY_WEBHOOK_SECRET: optional,
+    VERCEL_ACCESS_TOKEN: optional,
     GLOBAL_CONFIG_API_TOKEN: optional,
     GLOBAL_CONFIG_ID: optional,
     BLOB_READ_WRITE_TOKEN: optional,

@@ -1,77 +1,88 @@
 import { env } from "@/lib/env";
+import { createClient } from "@vercel/global-config";
 
 export type EmailStatus =
   "pending" | "approved" | "declined" | "no-action" | "junk";
+
 export type EmailStatusRecord = {
   status: EmailStatus;
-  adminLogin?: string;
-  adminName?: string;
   updatedAt: string;
+  admin?: string;
 };
 
-type ConfigResponse =
-  | { value?: Record<string, EmailStatusRecord> }
-  | Record<string, EmailStatusRecord>;
-function configUrl() {
-  if (!env.GLOBAL_CONFIG_API_TOKEN || !env.GLOBAL_CONFIG_ID)
+function client() {
+  if (!env.GLOBAL_CONFIG_ID || !env.GLOBAL_CONFIG_API_TOKEN)
     throw new Error("Status storage is not configured");
-  return `https://api.vercel.com/v1/global-config/${env.GLOBAL_CONFIG_ID}`;
+  return createClient(
+    `edge-config:id=${env.GLOBAL_CONFIG_ID}&token=${env.GLOBAL_CONFIG_API_TOKEN}`,
+  );
 }
-async function request<T>(init?: RequestInit): Promise<T> {
-  const response = await fetch(configUrl(), {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${env.GLOBAL_CONFIG_API_TOKEN}`,
-      "Content-Type": "application/json",
-      ...init?.headers,
-    },
-    cache: "no-store",
-  });
-  if (!response.ok)
-    throw new Error(`Status storage request failed (${response.status})`);
-  return response.json() as Promise<T>;
+
+export async function getEmailStatuses() {
+  const items = await client().getAll();
+  return items as Record<string, EmailStatusRecord>;
 }
-async function read(): Promise<Record<string, EmailStatusRecord>> {
-  const data = await request<ConfigResponse>();
-  return ("value" in data && data.value ? data.value : data) as Record<
-    string,
-    EmailStatusRecord
-  >;
-}
-async function write(value: Record<string, EmailStatusRecord>) {
-  await request({ method: "PUT", body: JSON.stringify({ value }) });
-}
-export async function getStatuses() {
-  return read();
-}
-export async function setStatus(
+
+export async function updateStatus(
   id: string,
   status: EmailStatus,
-  admin?: { login: string; name?: string | null },
-) {
-  const statuses = await read();
-  statuses[id] = {
-    status,
-    updatedAt: new Date().toISOString(),
-    adminLogin: admin?.login,
-    adminName: admin?.name ?? undefined,
-  };
-  await write(statuses);
+  admin: string) {
+    await bulkUpdateStatuses([
+      {
+        operation: 'upsert',
+        key: id,
+        value: {
+          status,
+          updatedAt: new Date().toISOString(),
+          admin,
+        },
+      },
+    ]);
+  }
+
+async function bulkUpdateStatuses(items: { key: string; operation: string; value?: EmailStatusRecord }[]) {
+  if (!env.GLOBAL_CONFIG_ID || !env.VERCEL_ACCESS_TOKEN)
+    throw new Error("Status storage is not configured");
+  const result = await fetch(
+    `https://api.vercel.com/v1/global-config/${env.GLOBAL_CONFIG_ID}/items`,
+    {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${env.VERCEL_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        items: items,
+      }),
+    },
+  );
+  if (!result.ok)
+    throw new Error(`Failed to update status: ${result.statusText}`);
 }
+
 export async function backfillAndPrune(ids: string[]) {
-  const statuses = await read();
-  const valid = new Set(ids);
-  let changed = false;
+  const updates: { key: string; operation: string; value?: EmailStatusRecord }[] = [];
+  const statuses = await getEmailStatuses();
+  const now = new Date().toISOString();
   for (const id of ids)
     if (!statuses[id]) {
-      statuses[id] = { status: "pending", updatedAt: new Date().toISOString() };
-      changed = true;
+      statuses[id] = { status: "pending", updatedAt: now };
+      updates.push({
+        operation: 'upsert',
+        key: id,
+        value: statuses[id],
+      });
     }
+
+  const valid = new Set(ids);
   for (const id of Object.keys(statuses))
     if (!valid.has(id)) {
       delete statuses[id];
-      changed = true;
+      updates.push({ operation: 'delete', key: id });
     }
-  if (changed) await write(statuses);
+
+  if (updates.length > 0)
+    await bulkUpdateStatuses(updates);
   return statuses;
 }
+

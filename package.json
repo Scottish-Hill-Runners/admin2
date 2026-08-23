@@ -14,13 +14,14 @@
   },
   "dependencies": {
     "@octokit/rest": "^22.0.1",
-    "@vercel/blob": "^1.1.1",
+    "@vercel/blob": "^2.8.0",
+    "@vercel/global-config": "^1.5.1",
     "cloudinary": "^2.10.0",
     "csv-parse": "^6.1.0",
     "csv-stringify": "^6.6.0",
     "diff": "^8.0.2",
     "gray-matter": "^4.0.3",
-    "next": "16.2.1",
+    "next": "16.3.2",
     "next-auth": "^5.0.0-beta.30",
     "react": "19.2.4",
     "react-dom": "19.2.4",
@@ -40,5 +41,10 @@
     "typescript": "^5",
     "typescript-eslint": "^8.67.0",
     "vitest": "^3.2.4"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "fsevents@2.3.3": true,
+    "sharp@0.34.5": true
   }
 }
