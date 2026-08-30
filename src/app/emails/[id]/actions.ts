@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-session";
 import {
   applyMinorEdit,
@@ -34,10 +35,6 @@ export async function updateEmailStatus(
       await addSuppression(email.from);
     }
     await updateStatus(id, status, admin.user.name ?? admin.user.login);
-    return {
-      status: "success",
-      message: "Saved.",
-    };
   } catch (error) {
     console.error(
       "Unable to update email status",
@@ -48,6 +45,7 @@ export async function updateEmailStatus(
       message: "That update could not be saved. Please try again.",
     };
   }
+  redirect("/inbox");
 }
 
 export async function approveEmail(
@@ -97,7 +95,7 @@ export async function approveEmail(
       `Update ${update.path} via admin review`,
     );
     await updateStatus(id, "approved", admin.user.name ?? admin.user.login);
-    return { status: "success", message: "Saved to the draft updates." };
+    redirect("/inbox");
   } catch (error) {
     console.error(
       "Unable to approve email",

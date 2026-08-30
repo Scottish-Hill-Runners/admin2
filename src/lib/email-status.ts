@@ -12,7 +12,9 @@ export type EmailStatusRecord = {
 
 function client() {
   if (!env.GLOBAL_CONFIG_ID || !env.GLOBAL_CONFIG_API_TOKEN)
-    throw new Error("Status storage is not configured");
+    throw new Error(
+      "Status storage is not configured (missing GLOBAL_CONFIG_ID or GLOBAL_CONFIG_API_TOKEN)",
+    );
   return createClient(
     `edge-config:id=${env.GLOBAL_CONFIG_ID}&token=${env.GLOBAL_CONFIG_API_TOKEN}`,
   );
@@ -41,8 +43,12 @@ export async function updateStatus(
   }
 
 async function bulkUpdateStatuses(items: { key: string; operation: string; value?: EmailStatusRecord }[]) {
+  // Writing items needs a full Vercel API token; the Global Config read
+  // token above cannot authorise this REST endpoint.
   if (!env.GLOBAL_CONFIG_ID || !env.VERCEL_ACCESS_TOKEN)
-    throw new Error("Status storage is not configured");
+    throw new Error(
+      "Status storage is not configured (missing GLOBAL_CONFIG_ID or VERCEL_ACCESS_TOKEN)",
+    );
   const result = await fetch(
     `https://api.vercel.com/v1/global-config/${env.GLOBAL_CONFIG_ID}/items`,
     {
