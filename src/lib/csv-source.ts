@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
 import type { ReceivedEmail } from "@/lib/resend";
+import { downloadAttachment } from "@/lib/resend";
 import { extractSections, parseKeyValues } from "@/lib/email-parse";
 
 const maxAttachmentBytes = 15 * 1024 * 1024;
@@ -7,27 +8,22 @@ const csvExtensions = new Set([".csv"]);
 const spreadsheetExtensions = new Set([".xlsx", ".ods"]);
 
 export async function attachmentBytes(
+  emailId: string,
   attachment: NonNullable<ReceivedEmail["attachments"]>[number],
 ) {
-  let bytes: Buffer;
-  if (attachment.content) bytes = Buffer.from(attachment.content, "base64");
-  else if (attachment.url) {
-    const response = await fetch(attachment.url, { cache: "no-store" });
-    if (!response.ok)
-      throw new Error("The email attachment could not be downloaded");
-    bytes = Buffer.from(await response.arrayBuffer());
-  } else throw new Error("The email attachment has no downloadable content");
+  const bytes = await downloadAttachment(emailId, attachment);
   if (bytes.byteLength > maxAttachmentBytes)
     throw new Error("The email attachment is larger than 15 MB");
   return bytes;
 }
 
 export async function csvFromAttachment(
+  emailId: string,
   attachment: NonNullable<ReceivedEmail["attachments"]>[number],
 ) {
   const filename = attachment.filename.toLowerCase();
   const extension = filename.slice(filename.lastIndexOf("."));
-  const bytes = await attachmentBytes(attachment);
+  const bytes = await attachmentBytes(emailId, attachment);
   if (csvExtensions.has(extension))
     return bytes.toString("utf8").replace(/^\uFEFF/, "");
   if (spreadsheetExtensions.has(extension)) {
@@ -61,5 +57,5 @@ export async function csvFromEmail(email: ReceivedEmail, path: string) {
   });
   if (!attachment)
     throw new Error("No CSV or spreadsheet attachment was found");
-  return csvFromAttachment(attachment);
+  return csvFromAttachment(email.id, attachment);
 }

@@ -11,6 +11,9 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT {
     githubAccessToken?: string;
+    githubRefreshToken?: string;
+    githubAccessTokenExpiresAt?: number;
+    githubError?: "RefreshAccessTokenError";
     githubLogin?: string;
     githubName?: string;
     githubEmail?: string;

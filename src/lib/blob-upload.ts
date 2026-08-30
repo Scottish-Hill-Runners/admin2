@@ -34,7 +34,7 @@ export async function uploadEmailAsset(email: ReceivedEmail) {
     (item) => !/\.(csv|xlsx|ods)$/i.test(item.filename),
   );
   if (!attachment) throw new Error("No image or document attachment was found");
-  const bytes = await attachmentBytes(attachment);
+  const bytes = await attachmentBytes(email.id, attachment);
   const metadata = {
     title: values.title,
     description: values.description,

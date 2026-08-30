@@ -27,11 +27,12 @@ export type ReceivedEmailSummary = {
 export type ReceivedEmail = ReceivedEmailSummary & {
   text?: string;
   html?: string;
+  // Resend only returns attachment metadata here; use downloadAttachment()
+  // (which calls the separate Attachments API) to get the actual bytes.
   attachments?: Array<{
     id?: string;
     filename: string;
     content?: string;
-    url?: string;
     content_type?: string;
   }>;
 };
@@ -59,17 +60,31 @@ export function getReceivedEmail(id: string) {
     `/emails/receiving/${encodeURIComponent(id)}`,
   );
 }
+
+export async function getAttachmentDownloadUrl(
+  emailId: string,
+  attachmentId: string,
+) {
+  const attachment = await resendRequest<{ download_url: string }>(
+    `/emails/receiving/${encodeURIComponent(emailId)}/attachments/${encodeURIComponent(attachmentId)}`,
+  );
+  return attachment.download_url;
+}
+
 export async function downloadAttachment(
+  emailId: string,
   attachment: NonNullable<ReceivedEmail["attachments"]>[number],
 ) {
   if (attachment.content) return Buffer.from(attachment.content, "base64");
-  if (!attachment.url)
-    throw new Error("The email attachment has no download URL");
-  const response = await fetch(attachment.url, { cache: "no-store" });
+  if (!attachment.id)
+    throw new Error("The email attachment has no downloadable content");
+  const url = await getAttachmentDownloadUrl(emailId, attachment.id);
+  const response = await fetch(url, { cache: "no-store" });
   if (!response.ok)
     throw new Error("The email attachment could not be downloaded");
   return Buffer.from(await response.arrayBuffer());
 }
+
 export async function addSuppression(email: string) {
   await resendRequest("/suppressions", {
     method: "POST",
