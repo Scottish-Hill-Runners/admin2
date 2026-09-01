@@ -16,6 +16,7 @@ function configured() {
   });
   return cloudinary;
 }
+
 export type AssetEntry = {
   secure_url: string;
   resource_type: string;
@@ -24,6 +25,7 @@ export type AssetEntry = {
   tags: string[];
   etag: string;
 };
+
 export function uploadAsset(
   buffer: Buffer,
   options: {
@@ -65,12 +67,14 @@ export function uploadAsset(
     stream.end(buffer);
   });
 }
+
 export async function listFoldersWithAssets() {
   const result = await configured().api.root_folders();
   return result.folders
     .filter((folder: { name: string }) => folder.name)
     .map((folder: { name: string }) => folder.name);
 }
+
 export async function listAssetsInFolder(
   folder: string,
 ): Promise<AssetEntry[]> {
