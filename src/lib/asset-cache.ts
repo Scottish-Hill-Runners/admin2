@@ -1,4 +1,4 @@
-import { del, list, put } from "@vercel/blob";
+import { del, get, list, put } from "@vercel/blob";
 import { env } from "@/lib/env";
 import {
   listAssetsInFolder,
@@ -26,7 +26,7 @@ export async function refreshCache(): Promise<AssetCache> {
   for (const name of names) folders[name] = await listAssetsInFolder(name);
   const cache = { generatedAt: new Date().toISOString(), folders };
   await put(cachePath, JSON.stringify(cache), {
-    access: "public",
+    access: "private",
     addRandomSuffix: false,
     allowOverwrite: true,
     token: env.BLOB_READ_WRITE_TOKEN,
@@ -38,23 +38,18 @@ export async function readCache(): Promise<AssetCache> {
   if (!env.BLOB_READ_WRITE_TOKEN)
     throw new Error("Asset cache is not configured");
   console.info("Reading asset cache from Blob");
-  const blobs = await list({
-    prefix: cachePath,
+  const blob = await get(cachePath, {
+    access: "private",
     token: env.BLOB_READ_WRITE_TOKEN,
+    useCache: false,
   });
-  const blob = blobs.blobs[0];
   if (!blob) {
     console.info("Asset cache was not found; refreshing it");
     return refreshCache();
   }
-  const response = await fetch(blob.url, { cache: "no-store" });
-  if (!response.ok) {
-    console.warn("Asset cache could not be fetched; refreshing it", {
-      status: response.status,
-    });
-    return refreshCache();
-  }
-  return response.json() as Promise<AssetCache>;
+  if (blob.statusCode === 304 || !blob.stream)
+    throw new Error("Asset cache returned no content");
+  return new Response(blob.stream).json() as Promise<AssetCache>;
 }
 
 export async function flushCache() {
