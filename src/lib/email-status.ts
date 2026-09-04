@@ -1,5 +1,5 @@
 import { env } from "@/lib/env";
-import { createClient } from "@vercel/global-config";
+import { getAll } from "@vercel/global-config";
 
 export type EmailStatus =
   "pending" | "approved" | "declined" | "no-action" | "junk";
@@ -10,18 +10,8 @@ export type EmailStatusRecord = {
   admin?: string;
 };
 
-function client() {
-  if (!env.GLOBAL_CONFIG_ID || !env.GLOBAL_CONFIG_API_TOKEN)
-    throw new Error(
-      "Status storage is not configured (missing GLOBAL_CONFIG_ID or GLOBAL_CONFIG_API_TOKEN)",
-    );
-  return createClient(
-    `edge-config:id=${env.GLOBAL_CONFIG_ID}&token=${env.GLOBAL_CONFIG_API_TOKEN}`,
-  );
-}
-
 export async function getEmailStatuses() {
-  const items = await client().getAll();
+  const items = await getAll();
   return items as Record<string, EmailStatusRecord>;
 }
 
