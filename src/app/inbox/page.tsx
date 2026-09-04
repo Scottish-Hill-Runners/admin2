@@ -61,7 +61,7 @@ export default async function InboxPage() {
             {emails.map((email) =>
               <tr className="border-b border-[var(--line)]" key={email.id}>
                 <td className="p-3">{new Date(email.created_at).toLocaleDateString()}</td>
-                <td className="p-3">{email.from}</td>
+                <td className="p-3"><a href={`mailto:${email.from}`}>{email.from}</a></td>
                 <td className="p-3">
                   <Link className="font-bold underline" href={`/emails/${email.id}`}>
                     {email.subject || "(no subject)"}

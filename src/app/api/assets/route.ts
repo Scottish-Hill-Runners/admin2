@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { readCache } from "@/lib/asset-cache";
+import { readCache, readFoldersCache } from "@/lib/asset-cache";
 
 function errorDetails(error: unknown) {
   if (error instanceof Error)
@@ -14,22 +14,16 @@ function errorDetails(error: unknown) {
 export async function GET(request: Request) {
   const folder = new URL(request.url).searchParams.get("folder");
   try {
-    const cache = await readCache();
+    let resp;
     if (folder) {
-      if (!cache.folders[folder])
-        return NextResponse.json(
-          { error: "Folder not found" },
-          { status: 404 },
-        );
-      const response = NextResponse.json({
-        folder,
-        entries: cache.folders[folder],
-      });
-      response.headers.set("Access-Control-Allow-Origin", "*");
-      response.headers.set("Cache-Control", "public, max-age=300");
-      return response;
+      const cache = await readCache(folder);
+      resp = { folder, entries: cache.assets };
+    } else {
+      const folders = await readFoldersCache();
+      resp = { folders: folders.folders };
     }
-    const response = NextResponse.json({ folders: Object.keys(cache.folders) });
+    
+    const response = NextResponse.json(resp);
     response.headers.set("Access-Control-Allow-Origin", "*");
     response.headers.set("Cache-Control", "public, max-age=300");
     return response;

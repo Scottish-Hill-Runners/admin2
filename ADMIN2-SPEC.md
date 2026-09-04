@@ -169,12 +169,12 @@ Implement `src/lib/cloudinary.ts` with the v2 Node SDK (server-side only).
 
 ```ts
 type AssetEntry = {
-  secure_url: string;
-  resource_type: string;
+  public_id: string;
+  format: string;
   title?: string;        // context title or caption
   description?: string;  // context description or alt
-  tags: string[];
-  etag: string;
+  tags?: string[];
+  etag?: string;
 };
 ```
 

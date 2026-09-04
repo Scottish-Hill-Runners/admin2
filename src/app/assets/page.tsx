@@ -1,11 +1,11 @@
 import { requireAdmin } from "@/lib/auth-session";
-import { readCache } from "@/lib/asset-cache";
+import { readFoldersCache } from "@/lib/asset-cache";
 
 export default async function AssetsPage() {
   await requireAdmin();
-  let cache: Awaited<ReturnType<typeof readCache>> | undefined;
+  let cache: Awaited<ReturnType<typeof readFoldersCache>> | undefined;
   try {
-    cache = await readCache();
+    cache = await readFoldersCache();
   } catch { }
   if (!cache)
     return (
@@ -19,10 +19,9 @@ export default async function AssetsPage() {
         <h1 className="mt-3 text-5xl">Asset list</h1>
         <p className="mt-6">Last refreshed {new Date(cache.generatedAt).toLocaleString()}.</p>
         <div className="mt-8 grid gap-3 md:grid-cols-2">
-          {Object.entries(cache.folders).map(([folder, entries]) => (
+          {cache.folders.map((folder) => (
             <div className="border border-[var(--line)] p-4" key={folder}>
               <p className="font-bold">{folder}</p>
-              <p className="mt-2 text-sm">{entries.length} assets</p>
             </div>
           ))}
         </div>

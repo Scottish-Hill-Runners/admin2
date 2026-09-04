@@ -18,12 +18,12 @@ function configured() {
 }
 
 export type AssetEntry = {
-  secure_url: string;
-  resource_type: string;
+  public_id: string;
+  format: string;
   title?: string;
   description?: string;
-  tags: string[];
-  etag: string;
+  tags?: string[];
+  etag?: string;
 };
 
 export function uploadAsset(
@@ -68,36 +68,47 @@ export function uploadAsset(
   });
 }
 
-export async function listFoldersWithAssets() {
-  const result = await configured().api.root_folders();
-  return result.folders
-    .filter((folder: { name: string }) => folder.name)
-    .map((folder: { name: string }) => folder.name);
+export async function listFoldersWithAssets(): Promise<string[]> {
+  const cld = configured();
+  const folders: string[] = [];
+  // Cloudinary auto-deletes empty folders, so any folder returned here contains at least one asset (directly or in a subfolder)
+  async function walk(parentPath?: string) {
+    const result = parentPath
+      ? await cld.api.sub_folders(parentPath)
+      : await cld.api.root_folders();
+    for (const folder of result.folders as { name: string; path?: string }[]) {
+      if (!folder.name) continue;
+      const path = folder.path ?? folder.name;
+      folders.push(path);
+      await walk(path);
+    }
+  }
+  await walk();
+  return folders;
 }
 
 export async function listAssetsInFolder(
   folder: string,
 ): Promise<AssetEntry[]> {
-  const result = await configured().api.resources({
-    type: "upload",
-    prefix: `${folder}/`,
+  // asset_folder is metadata, not a public_id prefix, so resources() with `prefix` misses assets in dynamic folder mode
+  const result = await configured().api.resources_by_asset_folder(folder, {
     max_results: 500,
     context: true,
     tags: true,
   });
   return result.resources.map(
     (asset: {
-      secure_url: string;
-      resource_type: string;
+      public_id: string;
+      format: string;
       context?: { custom?: Record<string, string> };
       tags?: string[];
-      etag: string;
+      etag?: string;
     }) => ({
-      secure_url: asset.secure_url,
-      resource_type: asset.resource_type,
+      public_id: asset.public_id,
+      format: asset.format,
       title: asset.context?.custom?.title,
       description: asset.context?.custom?.description,
-      tags: asset.tags ?? [],
+      tags: asset.tags ?? undefined,
       etag: asset.etag,
     }),
   );
