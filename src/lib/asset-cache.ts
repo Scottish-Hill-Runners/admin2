@@ -16,6 +16,8 @@ type AssetCache = {
   assets: AssetEntry[];
 };
 
+const FOLDERS_CACHE_PATH = "folders-cache.json";
+
 export async function refreshFolders(): Promise<FoldersCache> {
   const folders = await listFoldersWithAssets().catch((error) => {
     console.error("Failed to list folders with assets:", error);
@@ -23,7 +25,7 @@ export async function refreshFolders(): Promise<FoldersCache> {
   });
 
   const cache = { generatedAt: new Date().toISOString(), folders };
-  await put("/", JSON.stringify(cache), {
+  await put(FOLDERS_CACHE_PATH, JSON.stringify(cache), {
     access: "private",
     addRandomSuffix: false,
     allowOverwrite: true,
@@ -33,7 +35,7 @@ export async function refreshFolders(): Promise<FoldersCache> {
 }
 
 export async function readFoldersCache(): Promise<FoldersCache> {
-  const blob = await get("/", {
+  const blob = await get(FOLDERS_CACHE_PATH, {
     access: "private",
     token: env.BLOB_READ_WRITE_TOKEN,
     useCache: false,
