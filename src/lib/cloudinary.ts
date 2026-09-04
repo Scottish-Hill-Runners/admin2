@@ -19,6 +19,7 @@ function configured() {
 
 export type AssetEntry = {
   public_id: string;
+  resource_type: string;
   format: string;
   title?: string;
   description?: string;
@@ -99,12 +100,14 @@ export async function listAssetsInFolder(
   return result.resources.map(
     (asset: {
       public_id: string;
+      resource_type: string;
       format: string;
       context?: { custom?: Record<string, string> };
       tags?: string[];
       etag?: string;
     }) => ({
       public_id: asset.public_id,
+      resource_type: asset.resource_type,
       format: asset.format,
       title: asset.context?.custom?.title,
       description: asset.context?.custom?.description,

@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-session";
 import { readCache } from "@/lib/asset-cache";
+import { env } from "@/lib/env";
+import Image from "next/image";
 
 export default async function AssetFolderPage({
   params,
@@ -32,6 +34,13 @@ export default async function AssetFolderPage({
       <div className="mt-8 grid gap-3 md:grid-cols-2">
         {cache.assets.map((asset) => (
           <div className="border border-[var(--line)] p-4" key={asset.public_id}>
+            {env.CLOUDINARY_CLOUD_NAME && asset?.resource_type == "image" && (
+              <Image
+                src={`https://res.cloudinary.com/${encodeURIComponent(env.CLOUDINARY_CLOUD_NAME)}/image/upload/f_auto,q_auto,c_fill,g_auto,w_640/${asset.public_id}.${asset.format}`}
+                alt={asset.title ?? asset.public_id}
+                className="mt-2"
+              />
+            )}
             <p className="font-bold">{asset.public_id}</p>
             <p className="text-sm">{asset.format}</p>
             {asset.title && <p className="mt-2">{asset.title}</p>}
