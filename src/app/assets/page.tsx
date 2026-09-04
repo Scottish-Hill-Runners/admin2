@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-session";
 import { readFoldersCache } from "@/lib/asset-cache";
 
@@ -23,9 +24,13 @@ export default async function AssetsPage() {
         <p className="mt-6">Last refreshed {new Date(cache.generatedAt).toLocaleString()}.</p>
         <div className="mt-8 grid gap-3 md:grid-cols-2">
           {cache.folders.map((folder) => (
-            <div className="border border-[var(--line)] p-4" key={folder}>
+            <Link
+              href={`/assets/${folder}`}
+              className="border border-[var(--line)] p-4 block"
+              key={folder}
+            >
               <p className="font-bold">{folder}</p>
-            </div>
+            </Link>
           ))}
         </div>
       </main>
