@@ -60,7 +60,7 @@ export async function refreshCache(folder: string): Promise<AssetCache> {
   });
   const assets = await listAssetsInFolder(folder);
   const cache = { generatedAt: new Date().toISOString(), assets };
-  await put(folder, JSON.stringify(cache), {
+  await put(`${folder}.json`, JSON.stringify(cache), {
     access: "private",
     addRandomSuffix: false,
     allowOverwrite: true,
@@ -70,7 +70,7 @@ export async function refreshCache(folder: string): Promise<AssetCache> {
 }
 
 export async function readCache(folder: string): Promise<AssetCache> {
-  const blob = await get(folder, {
+  const blob = await get(`${folder}.json`, {
     access: "private",
     token: env.BLOB_READ_WRITE_TOKEN,
     useCache: false,
@@ -84,10 +84,10 @@ export async function readCache(folder: string): Promise<AssetCache> {
   return new Response(blob.stream).json() as Promise<AssetCache>;
 }
 
-export async function flushCache(cachePath: string) {
-  console.info(`Flushing asset cache at ${cachePath}`);
+export async function flushCache(folder?: string) {
+  console.info(`Flushing asset cache at ${folder ?? FOLDERS_CACHE_PATH}`);
   const blobs = await list({
-    prefix: cachePath,
+    prefix: folder ? `${folder}.json` : FOLDERS_CACHE_PATH,
     token: env.BLOB_READ_WRITE_TOKEN,
   });
   await Promise.all(
