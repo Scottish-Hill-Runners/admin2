@@ -6,7 +6,10 @@ export default async function AssetsPage() {
   let cache: Awaited<ReturnType<typeof readFoldersCache>> | undefined;
   try {
     cache = await readFoldersCache();
-  } catch { }
+  } catch (error) {
+    console.error("Failed to read folders cache", error);
+  }
+
   if (!cache)
     return (
       <main className="p-8">
