@@ -11,7 +11,8 @@ export async function POST(request: Request) {
     secret !== env.CLOUDINARY_WEBHOOK_SECRET
   )
     return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
-  const payload = (await request.json()) as { notification_type?: string };
-  if (payload.notification_type === "upload") await refreshCache();
+  const payload = (await request.json()) as { notification_type?: string, folder?: string };
+  if (payload.notification_type === "upload" && payload.folder)
+    await refreshCache(payload.folder);
   return NextResponse.json({ ok: true });
 }
