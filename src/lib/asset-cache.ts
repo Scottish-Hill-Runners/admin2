@@ -4,11 +4,12 @@ import {
   listAssetsInFolder,
   listFoldersWithAssets,
   type AssetEntry,
+  type FolderEntry,
 } from "@/lib/cloudinary";
 
 type FoldersCache = {
   generatedAt: string;
-  folders: string[];
+  folders: FolderEntry[];
 };
 
 type AssetCache = {

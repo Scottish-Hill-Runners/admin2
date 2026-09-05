@@ -27,6 +27,11 @@ export type AssetEntry = {
   etag?: string;
 };
 
+export type FolderEntry = {
+  path: string;
+  count: number;
+};
+
 export function uploadAsset(
   buffer: Buffer,
   options: {
@@ -69,9 +74,18 @@ export function uploadAsset(
   });
 }
 
-export async function listFoldersWithAssets(): Promise<string[]> {
+async function countAssetsInFolder(folder: string): Promise<number> {
+  const result = await configured()
+    .search
+    .expression(`asset_folder="${folder}"`)
+    .max_results(1)
+    .execute();
+  return result.total_count;
+}
+
+export async function listFoldersWithAssets(): Promise<FolderEntry[]> {
   const cld = configured();
-  const folders: string[] = [];
+  const folders: FolderEntry[] = [];
   // Cloudinary auto-deletes empty folders, so any folder returned here contains at least one asset (directly or in a subfolder)
   async function walk(parentPath?: string) {
     const result = parentPath
@@ -80,10 +94,11 @@ export async function listFoldersWithAssets(): Promise<string[]> {
     for (const folder of result.folders as { name: string; path?: string }[]) {
       if (!folder.name) continue;
       const path = folder.path ?? folder.name;
-      folders.push(path);
+      folders.push({ path, count: await countAssetsInFolder(path) });
       await walk(path);
     }
   }
+
   await walk();
   return folders;
 }
@@ -111,7 +126,7 @@ export async function listAssetsInFolder(
       format: asset.format,
       title: asset.context?.custom?.title,
       description: asset.context?.custom?.description,
-      tags: asset.tags ?? undefined,
+      tags: asset.tags && asset.tags.length > 0 ? asset.tags : undefined,
       etag: asset.etag,
     }),
   );

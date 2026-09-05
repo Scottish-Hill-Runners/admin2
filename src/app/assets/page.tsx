@@ -25,11 +25,11 @@ export default async function AssetsPage() {
         <div className="mt-8 grid gap-3 md:grid-cols-2">
           {cache.folders.map((folder) => (
             <Link
-              href={`/assets/${folder}`}
+              href={`/assets/${folder.path}`}
               className="border border-[var(--line)] p-4 block"
-              key={folder}
+              key={folder.path}
             >
-              <p className="font-bold">{folder}</p>
+              <p className="font-bold">{folder.path} ({folder.count})</p>
             </Link>
           ))}
         </div>
