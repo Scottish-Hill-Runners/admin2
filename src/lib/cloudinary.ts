@@ -1,7 +1,7 @@
 import { v2 as cloudinary } from "cloudinary";
 import { env } from "@/lib/env";
 
-function configured() {
+export function configured() {
   if (
     !env.CLOUDINARY_CLOUD_NAME ||
     !env.CLOUDINARY_API_KEY ||
@@ -130,19 +130,27 @@ export async function listAssetsInFolder(
       format: string;
       width?: number;
       height?: number;
-      context?: { custom?: Record<string, string> };
+      context?: object;
       tags?: string[];
       etag?: string;
-    }) => ({
-      public_id: asset.public_id,
-      resource_type: asset.resource_type,
-      format: asset.format,
-      width: asset.width,
-      height: asset.height,
-      title: asset.context?.custom?.title,
-      description: asset.context?.custom?.description,
-      tags: asset.tags && asset.tags.length > 0 ? asset.tags : undefined,
-      etag: asset.etag,
-    }),
+    }) => {
+      // context is normally nested under `custom`, but some endpoints return it flat
+      const rawContext = asset.context as
+        | { custom?: Record<string, string> }
+        | undefined;
+      const context: Record<string, string> | undefined =
+        rawContext?.custom ?? (asset.context as Record<string, string> | undefined);
+      return {
+        public_id: asset.public_id,
+        resource_type: asset.resource_type,
+        format: asset.format,
+        width: asset.width,
+        height: asset.height,
+        title: context?.title ?? context?.caption,
+        description: context?.description ?? context?.alt,
+        tags: asset.tags && asset.tags.length > 0 ? asset.tags : undefined,
+        etag: asset.etag,
+      };
+    },
   );
 }
