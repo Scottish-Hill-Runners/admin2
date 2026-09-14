@@ -21,6 +21,8 @@ export type AssetEntry = {
   public_id: string;
   resource_type: string;
   format: string;
+  width?: number;
+  height?: number;
   title?: string;
   description?: string;
   tags?: string[];
@@ -107,16 +109,27 @@ export async function listAssetsInFolder(
   folder: string,
 ): Promise<AssetEntry[]> {
   // asset_folder is metadata, not a public_id prefix, so resources() with `prefix` misses assets in dynamic folder mode
-  const result = await configured().api.resources_by_asset_folder(folder, {
-    max_results: 500,
-    context: true,
-    tags: true,
-  });
+  let result;
+  try {
+    result = await configured().api.resources_by_asset_folder(folder, {
+      max_results: 500,
+      context: true,
+      tags: true,
+    });
+  } catch (error) {
+    // Cloudinary 404s when the folder doesn't exist (e.g. it's empty and was auto-deleted)
+    const httpCode = (error as { error?: { http_code?: number } })?.error
+      ?.http_code;
+    if (httpCode === 404) return [];
+    throw error;
+  }
   return result.resources.map(
     (asset: {
       public_id: string;
       resource_type: string;
       format: string;
+      width?: number;
+      height?: number;
       context?: { custom?: Record<string, string> };
       tags?: string[];
       etag?: string;
@@ -124,6 +137,8 @@ export async function listAssetsInFolder(
       public_id: asset.public_id,
       resource_type: asset.resource_type,
       format: asset.format,
+      width: asset.width,
+      height: asset.height,
       title: asset.context?.custom?.title,
       description: asset.context?.custom?.description,
       tags: asset.tags && asset.tags.length > 0 ? asset.tags : undefined,
