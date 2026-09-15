@@ -72,4 +72,14 @@ describe("email parsing", () => {
       ).kind,
     ).toBe("blob-upload");
   });
+
+  it("captures inline CSV results embedded in the body as a csv-file update", () => {
+    const update = classifyEmail(
+      "!-- start\nFile: races/BenLomond/2026.csv\n\nPosition,Name,Club,Category,Time\n1,Runner,Club,M40,0:45:00\n!-- end",
+    );
+    expect(update.kind).toBe("csv-file");
+    expect(update.body).toBe(
+      "Position,Name,Club,Category,Time\n1,Runner,Club,M40,0:45:00",
+    );
+  });
 });

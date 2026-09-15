@@ -1,7 +1,7 @@
 import { requireAdmin } from "@/lib/auth-session";
 import { getReceivedEmail } from "@/lib/resend";
 import { getFile, ensureStagingBranch } from "@/lib/github";
-import { previewEmailWithSources } from "@/lib/review-preview";
+import { previewEmail } from "@/lib/review-preview";
 import { ReviewActions } from "@/components/review-actions";
 import { LineDiff } from "@/components/line-diff";
 
@@ -26,10 +26,10 @@ export default async function EmailReviewPage({ params }: { params: Promise<{ id
   } catch (error) {
     console.error("Unable to load the current draft content", error instanceof Error ? error.message : "unknown error");
   }
-  let update: Awaited<ReturnType<typeof previewEmailWithSources>>["update"];
-  let content: Awaited<ReturnType<typeof previewEmailWithSources>>["content"];
+  let update: ReturnType<typeof previewEmail>["update"];
+  let content: ReturnType<typeof previewEmail>["content"];
   try {
-    ({ update, content } = await previewEmailWithSources(email, existing));
+    ({ update, content } = previewEmail(email, existing));
   } catch (error) {
     console.error("Unable to preview email update", error instanceof Error ? error.message : "unknown error");
     return (

@@ -11,7 +11,6 @@ import {
 import { getReceivedEmail } from "@/lib/resend";
 import { ensureStagingBranch, getFile, commitFiles } from "@/lib/github";
 import { updateStatus, type EmailStatus } from "@/lib/email-status";
-import { csvFromEmail } from "@/lib/csv-source";
 import { uploadEmailAsset } from "@/lib/blob-upload";
 
 export type ReviewActionState = {
@@ -87,7 +86,7 @@ export async function approveEmail(
           ? applyMinorEdit(current?.content ?? "", update.values ?? {})
           : update.kind === "calendar"
             ? mergeCalendar(current?.content ?? "", update.lines ?? [])
-            : await csvFromEmail(email, update.path);
+            : update.body ?? "";
     const content = editedContent === fresh ? fresh : editedContent;
     await commitFiles(
       admin.githubAccessToken,

@@ -5,7 +5,6 @@ import {
   mergeMarkdown,
 } from "@/lib/email-parse";
 import type { ReceivedEmail } from "@/lib/resend";
-import { csvFromEmail } from "@/lib/csv-source";
 
 export function previewEmail(email: ReceivedEmail, existing: string | null) {
   const update = classifyEmail(email.text ?? "");
@@ -27,15 +26,7 @@ export function previewEmail(email: ReceivedEmail, existing: string | null) {
       update,
       content: mergeCalendar(existing ?? "", update.lines ?? []),
     };
-  return { update, content: existing ?? "" };
-}
-
-export async function previewEmailWithSources(
-  email: ReceivedEmail,
-  existing: string | null,
-) {
-  const update = classifyEmail(email.text ?? "");
   if (update.kind === "csv-file" && update.path)
-    return { update, content: await csvFromEmail(email, update.path) };
-  return previewEmail(email, existing);
+    return { update, content: update.body ?? "" };
+  return { update, content: existing ?? "" };
 }

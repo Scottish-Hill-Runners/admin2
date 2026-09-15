@@ -85,6 +85,18 @@ export async function downloadAttachment(
   return Buffer.from(await response.arrayBuffer());
 }
 
+const maxAttachmentBytes = 15 * 1024 * 1024;
+
+export async function attachmentBytes(
+  emailId: string,
+  attachment: NonNullable<ReceivedEmail["attachments"]>[number],
+) {
+  const bytes = await downloadAttachment(emailId, attachment);
+  if (bytes.byteLength > maxAttachmentBytes)
+    throw new Error("The email attachment is larger than 15 MB");
+  return bytes;
+}
+
 export async function addSuppression(email: string) {
   await resendRequest("/suppressions", {
     method: "POST",

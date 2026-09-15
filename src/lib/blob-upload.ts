@@ -1,7 +1,6 @@
 import { v2 as cloudinary } from "cloudinary";
 import { env } from "@/lib/env";
-import { attachmentBytes } from "@/lib/csv-source";
-import type { ReceivedEmail } from "@/lib/resend";
+import { attachmentBytes, type ReceivedEmail } from "@/lib/resend";
 import { extractSections, parseKeyValues } from "@/lib/email-parse";
 
 function configured() {

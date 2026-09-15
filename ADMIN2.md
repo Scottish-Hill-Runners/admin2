@@ -94,18 +94,21 @@ Some email clients may introduce alternating blank lines; these should be remove
 
 ### CSV result files
 
-New CSV result files are included either as an attachment or a link in the email body. If the email body contains a section delimited by `!--` then we can retrieve the file from there; e.g.
+New CSV result files are included in the email body, in a section delimited by `!--`. This section should start with the file, with the CSV content following. E.g.
 
 ```text
 !-- IF YOU EDIT THE TEXT BELOW, PLEASE DO SO WITH CARE
 File: races/TwoBreweries/2026.csv
-GoogleSheet: https://docs.google.com/spreadsheets/d/15Ry6nJHAbA8J_Vy0xYHS0EApR0jrRgmKF1WCeyxyFps
+
+Position,Name,Club,Category,Time
+1,Ryad Chebbout,Shettleston Harriers,M,00:29:59
+2,Jamie Goodge,Carnethy HRC,M,00:30:08
+3,James Espie,Deeside Runners,M,00:30:23
+4,Robin Downie,Lochaber AC,M,00:31:04
+5,Fearghas Thomson,Granite City Harriers,M,00:31:22
+6,Kieran Hardie,Harmeny AC,M20,00:31:29
 !-- END OF SENSITIVE SECTION
 ```
-
-If a `GoogleSheet` link is provided, the CSV content can be retrieved by appending `/gviz/tq?tqx=out:csv` to the URL.
-
-If no link is provided in the email body, look for CSV, XLSX or ODS attachments.
 
 ### Minor edits
 

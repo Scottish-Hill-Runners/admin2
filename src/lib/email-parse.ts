@@ -247,7 +247,7 @@ export function classifySection(lines: string[]): EmailUpdate {
     values["change category to"]
   )
     return { kind: "csv-minor-edit", path, values };
-  return { kind: "csv-file", path, values };
+  return { kind: "csv-file", path, values, body: lines.slice(1).join("\n").trim() };
 }
 
 export function classifyEmail(body: string): EmailUpdate {
