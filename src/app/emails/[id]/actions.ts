@@ -62,39 +62,35 @@ export async function approveEmail(
     if (update.kind === "blob-upload") {
       await uploadEmailAsset(email);
       await updateStatus(id, "approved", admin.user.name ?? admin.user.login);
-      return { status: "success", message: "Asset saved." };
-    }
-    if (
-      !update.path ||
-      !["markdown", "csv-minor-edit", "calendar", "csv-file"].includes(
-        update.kind,
+    } else {
+      if (
+        !update.path ||
+        !["markdown", "csv-minor-edit", "calendar", "csv-file"].includes(
+          update.kind,
+        )
       )
-    )
-      return {
-        status: "error",
-        message: "This email needs manual handling before it can be saved.",
-      };
-    await ensureStagingBranch(admin.githubAccessToken);
-    const current = await getFile(admin.githubAccessToken, update.path);
-    const fresh =
-      update.kind === "markdown"
-        ? mergeMarkdown(
-            current?.content ?? null,
-            (email.text ?? "").split(/\r?\n/).slice(1),
-          )
-        : update.kind === "csv-minor-edit"
-          ? applyMinorEdit(current?.content ?? "", update.values ?? {})
-          : update.kind === "calendar"
-            ? mergeCalendar(current?.content ?? "", update.lines ?? [])
-            : update.body ?? "";
-    const content = editedContent === fresh ? fresh : editedContent;
-    await commitFiles(
-      admin.githubAccessToken,
-      [{ path: update.path, content, sha: current?.sha }],
-      `Update ${update.path} via admin review`,
-    );
-    await updateStatus(id, "approved", admin.user.name ?? admin.user.login);
-    redirect("/inbox");
+        return {
+          status: "error",
+          message: "This email needs manual handling before it can be saved.",
+        };
+      await ensureStagingBranch(admin.githubAccessToken);
+      const current = await getFile(admin.githubAccessToken, update.path);
+      const fresh =
+        update.kind === "markdown"
+          ? mergeMarkdown(current?.content ?? null, update.lines ?? [])
+          : update.kind === "csv-minor-edit"
+            ? applyMinorEdit(current?.content ?? "", update.values ?? {})
+            : update.kind === "calendar"
+              ? mergeCalendar(current?.content ?? "", update.lines ?? [])
+              : update.body ?? "";
+      const content = editedContent === fresh ? fresh : editedContent;
+      await commitFiles(
+        admin.githubAccessToken,
+        [{ path: update.path, content, sha: current?.sha }],
+        `Update ${update.path} via admin review`,
+      );
+      await updateStatus(id, "approved", admin.user.name ?? admin.user.login);
+    }
   } catch (error) {
     console.error(
       "Unable to approve email",
@@ -106,4 +102,7 @@ export async function approveEmail(
         "That update could not be saved. Please check the content and try again.",
     };
   }
+  // redirect() must run outside try/catch — it throws internally and would
+  // otherwise be swallowed by the catch block above.
+  redirect("/inbox");
 }

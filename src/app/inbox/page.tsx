@@ -45,7 +45,15 @@ export default async function InboxPage() {
           <p className="m-0 text-sm font-bold uppercase tracking-[0.18em]">Review desk</p>
           <h1 className="mt-2 text-4xl">Saved updates</h1>
         </div>
-        <p className="text-sm">{admin.user.name ?? admin.user.login}</p>
+        <div className="flex items-center gap-4">
+          <Link
+            className="border-2 border-[var(--ink)] bg-[var(--accent)] px-5 py-3 font-bold"
+            href="/publish"
+          >
+            Publish
+          </Link>
+          <p className="text-sm">{admin.user.name ?? admin.user.login}</p>
+        </div>
       </header>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[650px] border-collapse text-left">

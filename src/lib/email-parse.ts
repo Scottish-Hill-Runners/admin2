@@ -240,7 +240,7 @@ export function classifySection(lines: string[]): EmailUpdate {
       lines: lines.filter((line) => /^\d{4}-\d{2}-\d{2},[-\w]*$/.test(line)),
     };
   if (path.endsWith(".md"))
-    return { kind: "markdown", path, body: lines.slice(1).join("\n") };
+    return { kind: "markdown", path, body: lines.slice(1).join("\n"), lines };
   if (
     values["change name to"] ||
     values["change club to"] ||

@@ -11,10 +11,7 @@ export function previewEmail(email: ReceivedEmail, existing: string | null) {
   if (update.kind === "markdown" && update.path)
     return {
       update,
-      content: mergeMarkdown(
-        existing,
-        (email.text ?? "").split(/\r?\n/).slice(1),
-      ),
+      content: mergeMarkdown(existing, update.lines ?? []),
     };
   if (update.kind === "csv-minor-edit" && update.path)
     return {
