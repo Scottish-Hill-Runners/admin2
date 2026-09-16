@@ -64,22 +64,37 @@ describe("email parsing", () => {
     expect(
       classifyEmail(
         "!-- start\nFile: calendar.csv\n2026-08-15,Oldhamstocks\n!-- end",
-      ).kind,
+      )[0].kind,
     ).toBe("calendar");
     expect(
       classifyEmail(
         "!-- start\nFolder: races/BenLomond\nTitle: Summit\n!-- end",
-      ).kind,
+      )[0].kind,
     ).toBe("blob-upload");
   });
 
   it("captures inline CSV results embedded in the body as a csv-file update", () => {
-    const update = classifyEmail(
+    const [update] = classifyEmail(
       "!-- start\nFile: races/BenLomond/2026.csv\n\nPosition,Name,Club,Category,Time\n1,Runner,Club,M40,0:45:00\n!-- end",
     );
     expect(update.kind).toBe("csv-file");
     expect(update.body).toBe(
       "Position,Name,Club,Category,Time\n1,Runner,Club,M40,0:45:00",
     );
+  });
+
+  it("returns every recognised section, e.g. a results file paired with a news post", () => {
+    const updates = classifyEmail(
+      "!-- start\nFile: races/BenLomond/2026.csv\n\nPosition,Name,Club,Category,Time\n1,Runner,Club,M40,0:45:00\n!-- end\n\n!-- start\nFile: news/2026/2026-08-22-1.md\n---\ntitle: Ben Lomond Race 2026 results\n---\nGreat racing.\n!-- end",
+    );
+    expect(updates).toHaveLength(2);
+    expect(updates.map((update) => update.kind)).toEqual([
+      "csv-file",
+      "markdown",
+    ]);
+    expect(updates.map((update) => update.path)).toEqual([
+      "races/BenLomond/2026.csv",
+      "news/2026/2026-08-22-1.md",
+    ]);
   });
 });

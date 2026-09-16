@@ -1,6 +1,6 @@
 import { requireAdmin } from "@/lib/auth-session";
 import { getReceivedEmail } from "@/lib/resend";
-import { getFile, ensureStagingBranch } from "@/lib/github";
+import { ensureStagingBranch } from "@/lib/github";
 import { previewEmail } from "@/lib/review-preview";
 import { ReviewActions } from "@/components/review-actions";
 import { LineDiff } from "@/components/line-diff";
@@ -18,18 +18,10 @@ export default async function EmailReviewPage({ params }: { params: Promise<{ id
         <h1 className="text-4xl">This email could not be loaded.</h1>
         <p className="mt-4">Please return to the inbox and try again.</p>
       </main>);
-  let existing: string | null = null;
+  let updates: Awaited<ReturnType<typeof previewEmail>>;
   try {
     await ensureStagingBranch(admin.githubAccessToken);
-    const path = (email.text ?? "").match(/^File:\s*(\S+)/m)?.[1];
-    if (path) existing = (await getFile(admin.githubAccessToken, path))?.content ?? null;
-  } catch (error) {
-    console.error("Unable to load the current draft content", error instanceof Error ? error.message : "unknown error");
-  }
-  let update: ReturnType<typeof previewEmail>["update"];
-  let content: ReturnType<typeof previewEmail>["content"];
-  try {
-    ({ update, content } = previewEmail(email, existing));
+    updates = await previewEmail(admin.githubAccessToken, email);
   } catch (error) {
     console.error("Unable to preview email update", error instanceof Error ? error.message : "unknown error");
     return (
@@ -49,27 +41,25 @@ export default async function EmailReviewPage({ params }: { params: Promise<{ id
     <p className="mt-4 text-lg">
       From {email.from}
     </p>
-    <section className="mt-10 border-t-2 border-[var(--ink)] pt-5">
-      <p className="font-bold uppercase">
-        Detected: {update.kind}
-      </p>
-      <p className="mt-3">
-        {update.path ? `File: ${update.path}` : update.reason ?? "This update is ready to review."}
-      </p>
-      {existing ?
-        (update.kind === "blob-upload" ?
+    {updates.map(({ update, content, existing }, index) => (
+      <section key={update.path ?? index} className="mt-10 border-t-2 border-[var(--ink)] pt-5">
+        <p className="font-bold uppercase">
+          Detected: {update.kind}
+        </p>
+        <p className="mt-3">
+          {update.path ? `File: ${update.path}` : update.reason ?? "This update is ready to review."}
+        </p>
+        {update.kind === "blob-upload" ?
           <pre className="mt-8 whitespace-pre-wrap border border-[var(--line)] bg-white/50 p-5 text-sm">
             {email.text}
           </pre>
-          : <LineDiff
-              after={content || email.text || ""}
-              before={existing ?? ""} />
-        ) : ''
-      }
-      <ReviewActions
-        canApprove={Boolean(update.path && update.kind !== "unrecognised")}
-        content={content}
-        emailId={id} />
+          : update.path && <LineDiff after={content} before={existing ?? ""} />
+        }
       </section>
+    ))}
+    <ReviewActions
+      updates={updates}
+      emailId={id} />
   </main>);
 }
+

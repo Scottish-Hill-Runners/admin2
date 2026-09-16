@@ -250,14 +250,14 @@ export function classifySection(lines: string[]): EmailUpdate {
   return { kind: "csv-file", path, values, body: lines.slice(1).join("\n").trim() };
 }
 
-export function classifyEmail(body: string): EmailUpdate {
-  const section = extractSections(body)
+// A single email can contain several sections (e.g. a results CSV and a
+// matching news post); recognised sections are all returned so they can be
+// reviewed and saved together.
+export function classifyEmail(body: string): EmailUpdate[] {
+  const recognised = extractSections(body)
     .map(classifySection)
-    .find((item) => item.kind !== "unrecognised");
-  return (
-    section ?? {
-      kind: "unrecognised",
-      reason: "No recognised update section found",
-    }
-  );
+    .filter((item) => item.kind !== "unrecognised");
+  return recognised.length
+    ? recognised
+    : [{ kind: "unrecognised", reason: "No recognised update section found" }];
 }

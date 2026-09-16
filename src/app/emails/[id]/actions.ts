@@ -53,41 +53,50 @@ export async function approveEmail(
 ): Promise<ReviewActionState> {
   const admin = await requireAdmin();
   const id = String(formData.get("emailId") ?? "");
-  const editedContent = String(formData.get("content") ?? "");
   if (!id)
     return { status: "error", message: "There is no email to approve." };
   try {
     const email = await getReceivedEmail(id);
-    const update = classifyEmail(email.text ?? "");
-    if (update.kind === "blob-upload") {
+    const updates = classifyEmail(email.text ?? "");
+    if (updates.some((update) => update.kind === "blob-upload")) {
       await uploadEmailAsset(email);
       await updateStatus(id, "approved", admin.user.name ?? admin.user.login);
     } else {
-      if (
-        !update.path ||
-        !["markdown", "csv-minor-edit", "calendar", "csv-file"].includes(
-          update.kind,
-        )
-      )
+      const editable = updates.filter(
+        (update) =>
+          update.path &&
+          ["markdown", "csv-minor-edit", "calendar", "csv-file"].includes(
+            update.kind,
+          ),
+      );
+      if (!editable.length)
         return {
           status: "error",
           message: "This email needs manual handling before it can be saved.",
         };
       await ensureStagingBranch(admin.githubAccessToken);
-      const current = await getFile(admin.githubAccessToken, update.path);
-      const fresh =
-        update.kind === "markdown"
-          ? mergeMarkdown(current?.content ?? null, update.lines ?? [])
-          : update.kind === "csv-minor-edit"
-            ? applyMinorEdit(current?.content ?? "", update.values ?? {})
-            : update.kind === "calendar"
-              ? mergeCalendar(current?.content ?? "", update.lines ?? [])
-              : update.body ?? "";
-      const content = editedContent === fresh ? fresh : editedContent;
+      const files = await Promise.all(
+        editable.map(async (update, index) => {
+          const path = update.path as string;
+          const current = await getFile(admin.githubAccessToken, path);
+          const fresh =
+            update.kind === "markdown"
+              ? mergeMarkdown(current?.content ?? null, update.lines ?? [])
+              : update.kind === "csv-minor-edit"
+                ? applyMinorEdit(current?.content ?? "", update.values ?? {})
+                : update.kind === "calendar"
+                  ? mergeCalendar(current?.content ?? "", update.lines ?? [])
+                  : update.body ?? "";
+          const edited = formData.get(`content-${index}`);
+          const content =
+            edited != null && String(edited) !== fresh ? String(edited) : fresh;
+          return { path, content, sha: current?.sha };
+        }),
+      );
       await commitFiles(
         admin.githubAccessToken,
-        [{ path: update.path, content, sha: current?.sha }],
-        `Update ${update.path} via admin review`,
+        files,
+        `Update ${files.map((file) => file.path).join(", ")} via admin review`,
       );
       await updateStatus(id, "approved", admin.user.name ?? admin.user.login);
     }
@@ -106,3 +115,4 @@ export async function approveEmail(
   // otherwise be swallowed by the catch block above.
   redirect("/inbox");
 }
+
