@@ -56,13 +56,15 @@ export default async function EmailReviewPage({ params }: { params: Promise<{ id
       <p className="mt-3">
         {update.path ? `File: ${update.path}` : update.reason ?? "This update is ready to review."}
       </p>
-      {update.kind === "blob-upload" ?
-        <pre className="mt-8 whitespace-pre-wrap border border-[var(--line)] bg-white/50 p-5 text-sm">
-          {email.text}
-        </pre>
-        : <LineDiff
-            after={content || email.text || ""}
-            before={existing ?? ""} />
+      {existing ?
+        (update.kind === "blob-upload" ?
+          <pre className="mt-8 whitespace-pre-wrap border border-[var(--line)] bg-white/50 p-5 text-sm">
+            {email.text}
+          </pre>
+          : <LineDiff
+              after={content || email.text || ""}
+              before={existing ?? ""} />
+        ) : ''
       }
       <ReviewActions
         canApprove={Boolean(update.path && update.kind !== "unrecognised")}
