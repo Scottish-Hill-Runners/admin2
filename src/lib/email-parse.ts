@@ -201,8 +201,7 @@ export function applyMinorEdit(
     }
   }
   rows[selected.index] = row;
-  const lineEnding = csvText.includes("\r\n") ? "\r\n" : "\n";
-  return stringify(rows, { record_delimiter: lineEnding });
+  return stringify(rows, { record_delimiter: "\n" });
 }
 
 export function mergeCalendar(existing: string, incoming: string[]): string {
