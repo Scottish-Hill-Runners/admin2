@@ -1,6 +1,6 @@
 import {
   applyMinorEdit,
-  classifyEmail,
+  classifyEmailBody,
   mergeCalendar,
   mergeMarkdown,
 } from "@/lib/email-parse";
@@ -14,7 +14,7 @@ export async function previewEmail(
   token: string,
   email: ReceivedEmail,
 ): Promise<PreviewedUpdate[]> {
-  const updates = classifyEmail(email.text ?? "");
+  const updates = classifyEmailBody(email);
   return Promise.all(
     updates.map(async (update) => {
       const existing = update.path

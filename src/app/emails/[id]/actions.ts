@@ -6,7 +6,7 @@ import {
   applyMinorEdit,
   mergeCalendar,
   mergeMarkdown,
-  classifyEmail,
+  classifyEmailBody,
 } from "@/lib/email-parse";
 import { getReceivedEmail } from "@/lib/resend";
 import { ensureStagingBranch, getFile, commitFiles } from "@/lib/github";
@@ -57,7 +57,7 @@ export async function approveEmail(
     return { status: "error", message: "There is no email to approve." };
   try {
     const email = await getReceivedEmail(id);
-    const updates = classifyEmail(email.text ?? "");
+    const updates = classifyEmailBody(email);
     if (updates.some((update) => update.kind === "blob-upload")) {
       await uploadEmailAsset(email);
       await updateStatus(id, "approved", admin.user.name ?? admin.user.login);

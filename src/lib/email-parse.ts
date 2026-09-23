@@ -260,3 +260,39 @@ export function classifyEmail(body: string): EmailUpdate[] {
     ? recognised
     : [{ kind: "unrecognised", reason: "No recognised update section found" }];
 }
+
+const blockTags = /<\/(p|div|tr|li|h[1-6])>|<br\s*\/?>/gi;
+
+// Some mail clients strip line breaks from the plain-text part but keep
+// them (as <br>/block tags) in the HTML part, which breaks the "!--"
+// section markers this parser relies on. Converting <br>/block tags to
+// newlines here recovers the original layout well enough to re-classify.
+export function htmlToText(html: string): string {
+  return html
+    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, "")
+    .replace(blockTags, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/[ \t]+\n/g, "\n")
+    .trim();
+}
+
+// If the plain-text body fails to classify (e.g. line breaks were
+// stripped), retry with an HTML-to-text conversion of the HTML body.
+export function classifyEmailBody(email: {
+  text?: string | null;
+  html?: string | null;
+}): EmailUpdate[] {
+  const fromText = classifyEmail(email.text ?? "");
+  if (fromText.some((update) => update.kind !== "unrecognised")) return fromText;
+  if (!email.html) return fromText;
+  const fromHtml = classifyEmail(htmlToText(email.html));
+  return fromHtml.some((update) => update.kind !== "unrecognised")
+    ? fromHtml
+    : fromText;
+}
