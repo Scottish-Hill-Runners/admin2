@@ -11,14 +11,21 @@ export function normalizeRepoPath(path: string) {
     throw new Error("Invalid content path");
   return path;
 }
+
 function repository() {
   const [owner, repo] = env.CONTENT_REPO.split("/");
   if (!owner || !repo) throw new Error("Content store is not configured");
   return { owner, repo };
 }
+
 function client(token: string) {
   return new Octokit({ auth: token });
 }
+
+function toBase64(input: string): string {
+  return Buffer.from(input.replace(/\r\n/g, "\n").replace(/\r/g, "\n"), "utf8").toString("base64");
+}
+
 export async function getFile(
   token: string,
   path: string,
@@ -43,6 +50,7 @@ export async function getFile(
     throw error;
   }
 }
+
 export async function ensureStagingBranch(token: string) {
   const { owner, repo } = repository();
   const api = client(token);
@@ -67,6 +75,7 @@ export async function ensureStagingBranch(token: string) {
     });
   }
 }
+
 export async function commitFiles(
   token: string,
   files: Array<{ path: string; content: string; sha?: string }>,
@@ -83,7 +92,7 @@ export async function commitFiles(
       path: normalizeRepoPath(file.path),
       branch: env.CONTENT_STAGING_BRANCH,
       message,
-      content: Buffer.from(file.content, "utf8").toString("base64"),
+      content: toBase64(file.content),
       ...(current ? { sha: current } : {}),
     });
     result = {
@@ -93,6 +102,7 @@ export async function commitFiles(
   }
   return { commitUrl: result.html_url, sha: result.commit?.sha };
 }
+
 export async function publishStagingToLive(token: string) {
   const { owner, repo } = repository();
   const api = client(token);
