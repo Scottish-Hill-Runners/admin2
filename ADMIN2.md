@@ -92,6 +92,8 @@ maleRecord: Prasad Prasad, 0:21:27 (2012)
 
 Some email clients may introduce alternating blank lines; these should be removed.
 
+Some email clients also hard-wrap long plain-text lines (~72–78 characters), which would otherwise corrupt a CSV row or markdown paragraph mid-line. To prevent this, shr-web pre-folds any line longer than 70 characters into several physical lines, each ending in a `^` continuation marker (a literal `^` in the content is escaped as `^^`). The admin app reverses this (`unfoldEmailBody`) before splitting the body into sections, so this is transparent to everything described below.
+
 ### CSV result files
 
 New CSV result files are included in the email body, in a section delimited by `!--`. This section should start with the file, with the CSV content following. E.g.

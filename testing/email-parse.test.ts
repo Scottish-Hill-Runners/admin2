@@ -83,6 +83,18 @@ describe("email parsing", () => {
     );
   });
 
+  it("reconstructs a CSV row that was line-folded to survive email hard-wrapping", () => {
+    // Simulates a mail client hard-wrapping a long row at column 30, using
+    // shr-web's caret continuation marker convention (marker + real newline).
+    const [update] = classifyEmail(
+      "!-- start\nFile: races/BenLomond/2026.csv\n\nPosition,Name,Club,Category,Time\n1,Alexandra Very Long Surn^\name,Long Distance Runners Club,F45,0:4^\n5:00\n!-- end",
+    );
+    expect(update.kind).toBe("csv-file");
+    expect(update.body).toBe(
+      "Position,Name,Club,Category,Time\n1,Alexandra Very Long Surname,Long Distance Runners Club,F45,0:45:00",
+    );
+  });
+
   it("returns every recognised section, e.g. a results file paired with a news post", () => {
     const updates = classifyEmail(
       "!-- start\nFile: races/BenLomond/2026.csv\n\nPosition,Name,Club,Category,Time\n1,Runner,Club,M40,0:45:00\n!-- end\n\n!-- start\nFile: news/2026/2026-08-22-1.md\n---\ntitle: Ben Lomond Race 2026 results\n---\nGreat racing.\n!-- end",

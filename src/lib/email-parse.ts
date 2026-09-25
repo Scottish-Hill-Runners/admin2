@@ -1,6 +1,7 @@
 import matter from "gray-matter";
 import { parse } from "csv-parse/sync";
 import { stringify } from "csv-stringify/sync";
+import { unfoldEmailBody } from "./email-line-fold";
 
 export type UpdateKind =
   | "markdown"
@@ -253,7 +254,7 @@ export function classifySection(lines: string[]): EmailUpdate {
 // matching news post); recognised sections are all returned so they can be
 // reviewed and saved together.
 export function classifyEmail(body: string): EmailUpdate[] {
-  const recognised = extractSections(body)
+  const recognised = extractSections(unfoldEmailBody(body))
     .map(classifySection)
     .filter((item) => item.kind !== "unrecognised");
   return recognised.length

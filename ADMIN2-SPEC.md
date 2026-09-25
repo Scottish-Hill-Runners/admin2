@@ -199,6 +199,7 @@ Email bodies contain one or more regions delimited by lines whose first non-whit
 
 - `extractSections(body: string): string[][]` — return the inner lines of each region.
 - Some clients interleave a blank line between every content line: if ≥50% of inner lines are blank, drop the blank ones.
+- Some clients hard-wrap plain text at ~72–78 characters, which can split a CSV row or markdown paragraph mid-line. shr-web pre-folds long lines with a trailing `^` continuation marker (escaping any literal `^` in the content as `^^` first); `unfoldEmailBody(text: string): string` (`src/lib/email-line-fold.ts`) reverses this and must run before `extractSections`. `classifyEmail` already calls it first, so callers don't need to invoke it separately.
 
 ### 6.2 Path validation
 
