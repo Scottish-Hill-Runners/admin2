@@ -11,6 +11,14 @@ import type { AssetEntry } from "@/lib/cloudinary";
 
 const initialState: ManagedAssetActionState = { status: "idle" };
 
+// Cloudinary renders a PDF's first page as a JPG via the pg_1 transform; other images use their own format.
+function thumbnailUrl(cloudName: string, asset: AssetEntry) {
+  if (asset.resource_type !== "image") return undefined;
+  if (asset.format === "pdf")
+    return `https://res.cloudinary.com/${encodeURIComponent(cloudName)}/image/upload/pg_1,f_auto,q_auto,c_fill,g_auto,w_640/${asset.public_id}.jpg`;
+  return `https://res.cloudinary.com/${encodeURIComponent(cloudName)}/image/upload/f_auto,q_auto,c_fill,g_auto,w_640/${asset.public_id}.${asset.format}`;
+}
+
 export function ManagedAssetCard({
   asset,
   folder,
@@ -29,12 +37,13 @@ export function ManagedAssetCard({
     initialState,
   );
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const thumbnail = cloudName ? thumbnailUrl(cloudName, asset) : undefined;
 
   return (
     <div className="border border-[var(--line)] p-4">
-      {cloudName && asset.resource_type === "image" && (
+      {thumbnail && (
         <Image
-          src={`https://res.cloudinary.com/${encodeURIComponent(cloudName)}/image/upload/f_auto,q_auto,c_fill,g_auto,w_640/${asset.public_id}.${asset.format}`}
+          src={thumbnail}
           alt={asset.title ?? asset.public_id}
           width={640}
           height={480}

@@ -26,6 +26,9 @@ export default async function HomePage() {
           <Link href="/inbox" className="border-2 border-[var(--ink)] p-5 font-bold">
             Inbox
           </Link>
+          <Link href="/assets" className="border-2 border-[var(--ink)] p-5 font-bold">
+            Browse assets
+          </Link>
           <Link href="/assets/documents" className="border-2 border-[var(--ink)] p-5 font-bold">
             Documents
           </Link>
