@@ -14,8 +14,6 @@ export type ManagedAssetActionState = {
   message?: string;
 };
 
-const idle: ManagedAssetActionState = { status: "idle" };
-
 function parseTags(value: FormDataEntryValue | null): string[] {
   return String(value ?? "")
     .split(",")
@@ -106,4 +104,3 @@ export async function updateManagedAssetMetadata(
   return { status: "success", message: "Saved." };
 }
 
-export { idle as idleManagedAssetActionState };
