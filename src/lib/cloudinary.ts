@@ -34,6 +34,13 @@ export type FolderEntry = {
   count: number;
 };
 
+function buildContextString(context: Record<string, string | undefined>) {
+  return Object.entries(context)
+    .filter(([, value]) => value)
+    .map(([key, value]) => `${key}=${value}`)
+    .join("|");
+}
+
 export function uploadAsset(
   buffer: Buffer,
   options: {
@@ -47,15 +54,12 @@ export function uploadAsset(
   },
 ) {
   return new Promise<{ secure_url: string }>((resolve, reject) => {
-    const context = Object.entries({
+    const context = buildContextString({
       title: options.title,
       description: options.description,
       license: options.license,
       individual_permission: options.individualPermission,
-    })
-      .filter(([, value]) => value)
-      .map(([key, value]) => `${key}=${value}`)
-      .join("|");
+    });
     const stream = configured().uploader.upload_stream(
       {
         folder: options.folder,
@@ -153,4 +157,23 @@ export async function listAssetsInFolder(
       };
     },
   );
+}
+
+export async function deleteAsset(publicId: string, resourceType: string) {
+  await configured().uploader.destroy(publicId, { resource_type: resourceType });
+}
+
+export async function updateAssetMetadata(
+  publicId: string,
+  resourceType: string,
+  options: { title?: string; description?: string; tags?: string[] },
+) {
+  await configured().api.update(publicId, {
+    resource_type: resourceType,
+    tags: (options.tags ?? []).join(","),
+    context: buildContextString({
+      title: options.title,
+      description: options.description,
+    }),
+  });
 }

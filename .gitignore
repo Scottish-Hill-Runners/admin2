@@ -5,3 +5,4 @@ node_modules
 .vercel
 ignore
 tsconfig.tsbuildinfo
+next-env.d.ts

@@ -30,8 +30,16 @@ const envSchema = z
     GLOBAL_CONFIG_API_TOKEN: optional,
     GLOBAL_CONFIG_ID: optional,
     BLOB_READ_WRITE_TOKEN: optional,
+    DEV_BYPASS_LOGIN: optional,
+    DEV_BYPASS_GITHUB_TOKEN: optional,
   })
   .superRefine((value, context) => {
+    if (value.DEV_BYPASS_LOGIN && process.env.NODE_ENV === "production")
+      context.addIssue({
+        code: "custom",
+        path: ["DEV_BYPASS_LOGIN"],
+        message: "DEV_BYPASS_LOGIN must not be set in production",
+      });
     if (value.CONTENT_BRANCH === value.CONTENT_STAGING_BRANCH)
       context.addIssue({
         code: "custom",

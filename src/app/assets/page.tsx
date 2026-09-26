@@ -23,6 +23,12 @@ export default async function AssetsPage() {
         <h1 className="mt-3 text-5xl">Asset list</h1>
         <p className="mt-6">Last refreshed {new Date(cache.generatedAt).toLocaleString()}.</p>
         <div className="mt-8 grid gap-3 md:grid-cols-2">
+          <Link href="/assets/documents" className="border-2 border-[var(--ink)] p-4 block">
+            <p className="font-bold">Manage documents</p>
+          </Link>
+          <Link href="/assets/portraits" className="border-2 border-[var(--ink)] p-4 block">
+            <p className="font-bold">Manage committee portraits</p>
+          </Link>
           {cache.folders.map((folder) => (
             <Link
               href={`/assets/${folder.path}`}
