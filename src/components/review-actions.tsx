@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { approveEmail, updateEmailStatus, type ReviewActionState } from "@/app/emails/[id]/actions";
+import { ContentEditor } from "@/components/content-editor";
 import type { PreviewedUpdate } from "@/lib/review-preview";
 
 const initialState: ReviewActionState = { status: "idle" };
@@ -20,14 +21,13 @@ export function ReviewActions({ emailId, updates }: {
       <form action={approve} className="grid gap-6 border border-[var(--line)] bg-white/60 p-5">
         {editable.map(({ update, content }, index) => (
           <div key={update.path}>
-            <label className="font-bold" htmlFor={`content-${index}`}>
-              Saved content — {update.path}
-            </label>
-            <textarea
-              className="mt-3 min-h-72 w-full border border-[var(--line)] bg-white p-3 font-mono text-sm"
+            <ContentEditor
               id={`content-${index}`}
               name={`content-${index}`}
-              defaultValue={content} />
+              kind={update.kind}
+              defaultValue={content}
+              label={`Saved content — ${update.path}`}
+            />
             <input type="hidden" name={`path-${index}`} value={update.path} />
           </div>
         ))}

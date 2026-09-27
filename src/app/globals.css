@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@mdxeditor/editor/style.css";
 
 :root { --ink: #17231f; --paper: #f4f0e8; --accent: #d85c36; --line: #c7c0b5; }
 * { box-sizing: border-box; }
