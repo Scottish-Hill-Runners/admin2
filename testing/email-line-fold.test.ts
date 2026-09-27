@@ -90,6 +90,19 @@ describe("email line fold/unfold round-trip", () => {
     expect(unfoldEmailBody(foldEmailBody(body, 40))).toBe(body);
   });
 
+  it("tolerates a trailing space added by a mail client after the marker", () => {
+    const longLine = "1," + "x".repeat(100) + ",Club,M,10:00";
+    const folded = foldEmailBody(longLine, 20);
+    // Only pad continuation (marker) lines - a mail client hard-wrapping the
+    // final line of a folded value is a separate, cosmetic concern (a lone
+    // trailing space can't be told apart from real content there).
+    const paddedByMailClient = folded
+      .split("\n")
+      .map((line) => (line.endsWith("^") ? line + " " : line))
+      .join("\n");
+    expect(unfoldEmailBody(paddedByMailClient)).toBe(longLine);
+  });
+
   it("normalizes CRLF line endings", () => {
     const body = "line one\r\nline two";
     expect(unfoldEmailBody(foldEmailBody(body))).toBe("line one\nline two");

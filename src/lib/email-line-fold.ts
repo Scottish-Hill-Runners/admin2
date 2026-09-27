@@ -14,12 +14,18 @@ export function unfoldEmailBody(text: string): string {
   let current = "";
   let pendingContinuation = false;
 
-  for (const line of physicalLines) {
-    current += line;
-    if (trailingCaretCount(current) % 2 === 1) {
-      current = current.slice(0, -1);
+  for (const rawLine of physicalLines) {
+    // Some mail clients pad wrapped lines with a trailing space, which would
+    // otherwise hide the continuation marker at the end of the line. Peek
+    // past any trailing whitespace to detect a marker, but only actually
+    // discard it once we know it was hiding one - a genuine final line keeps
+    // its trailing whitespace untouched, since it may be real content.
+    const withoutMarker = current + rawLine.replace(/[ \t]+$/, "");
+    if (trailingCaretCount(withoutMarker) % 2 === 1) {
+      current = withoutMarker.slice(0, -1);
       pendingContinuation = true;
     } else {
+      current += rawLine;
       logicalLines.push(current);
       current = "";
       pendingContinuation = false;
