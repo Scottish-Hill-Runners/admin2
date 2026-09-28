@@ -114,11 +114,19 @@ export async function publishStagingToLive(token: string) {
       base: env.CONTENT_BRANCH,
       title: "Publish saved updates",
     });
-    await api.pulls.merge({
+    const merge = await api.pulls.merge({
       owner,
       repo,
       pull_number: pr.data.number,
       merge_method: "merge",
+    });
+    // Reset staging to main's tip so commits made directly to main (bypassing staging) get picked up too.
+    await api.git.updateRef({
+      owner,
+      repo,
+      ref: `heads/${env.CONTENT_STAGING_BRANCH}`,
+      sha: merge.data.sha,
+      force: true,
     });
     return { prUrl: pr.data.html_url };
   } catch (error) {
