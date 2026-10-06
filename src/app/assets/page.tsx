@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth-session";
-import { readFoldersCache } from "@/lib/asset-cache";
+import { readFoldersCache, refreshFolders } from "@/lib/asset-cache";
 
 export default async function AssetsPage() {
   await requireAdmin();
@@ -22,6 +23,18 @@ export default async function AssetsPage() {
         <p className="text-sm font-bold uppercase tracking-[0.18em] text-[var(--accent)]">Assets</p>
         <h1 className="mt-3 text-5xl">Asset list</h1>
         <p className="mt-6">Last refreshed {new Date(cache.generatedAt).toLocaleString()}.</p>
+        <form
+          action={async () => {
+            "use server";
+            await requireAdmin();
+            await refreshFolders();
+            revalidatePath("/assets");
+          }}
+        >
+          <button className="mt-4 border border-[var(--ink)] px-4 py-2 font-bold" type="submit">
+            Refresh
+          </button>
+        </form>
         <div className="mt-8 grid gap-3 md:grid-cols-2">
           <Link href="/assets/documents" className="border-2 border-[var(--ink)] p-4 block">
             <p className="font-bold">Manage documents</p>

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth-session";
-import { readCache } from "@/lib/asset-cache";
+import { readCache, refreshCache } from "@/lib/asset-cache";
 import { env } from "@/lib/env";
 import Image from "next/image";
 
@@ -31,6 +32,18 @@ export default async function AssetFolderPage({
       <p className="mt-6">
         Last refreshed {new Date(cache.generatedAt).toLocaleString()}.
       </p>
+      <form
+        action={async () => {
+          "use server";
+          await requireAdmin();
+          await refreshCache(folder);
+          revalidatePath(`/assets/${folder}`);
+        }}
+      >
+        <button className="mt-4 border border-[var(--ink)] px-4 py-2 font-bold" type="submit">
+          Refresh
+        </button>
+      </form>
       <div className="mt-8 grid gap-3 md:grid-cols-2">
         {cache.assets.map((asset) => (
           <div className="border border-[var(--line)] p-4" key={asset.public_id}>
