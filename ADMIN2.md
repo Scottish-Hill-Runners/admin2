@@ -56,7 +56,7 @@ Each file has a path; e.g. `races/BenLedi/2013.csv`, `championships/SHR.md`, `in
 - `championships/`
 - `clubs/`
 - `info/`
-- `long-distance/`
+- `epics/`
 - `news/{YYYY}/`
 - `calendar.csv`
 
@@ -68,7 +68,7 @@ If the directory matches `races/{raceId}/` then the basepath must one of:
 - `\d{4}(-\w+)?\*?.csv` (regex match)
 - `*.geojson` (pattern match)
 
-If the directory is `championships/`, `clubs/`, `info/` or `long-distance/` then the basepath must match the regex `[-\w]+\.md`.
+If the directory is `championships/`, `clubs/`, `info/` or `epics/` then the basepath must match the regex `[-\w]+\.md`.
 
 If the directory is `news/{YYYY}/` then the basepath must match the regex `\d{4}-\d{2}-\d{2}(-\d+)?\.md`.
 

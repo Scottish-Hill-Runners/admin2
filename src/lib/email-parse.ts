@@ -80,7 +80,7 @@ export function validateContentPath(
           : "csv",
     };
   match = path.match(
-    /^(championships|clubs|info|long-distance)\/([-\w]+\.md)$/,
+    /^(championships|clubs|info|epics)\/([-\w]+\.md)$/,
   );
   if (match) return { kind: "markdown" };
   match = path.match(/^news\/\d{4}\/\d{4}-\d{2}-\d{2}(?:-\d+)?\.md$/);

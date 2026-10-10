@@ -209,7 +209,7 @@ Email bodies contain one or more regions delimited by lines whose first non-whit
 |---|---|
 | `races/{raceId}/index.md` | `{raceId}` matches `/^[-\w]+$/` |
 | `races/{raceId}/{base}` | base matches `/^\d{4}(-\w+)?\.csv$/` or `/^[\w-]+\.geojson$/` |
-| `championships/`, `clubs/`, `info/`, `long-distance/` `{base}` | base matches `/^[-\w]+\.md$/` |
+| `championships/`, `clubs/`, `info/`, `epics/` `{base}` | base matches `/^[-\w]+\.md$/` |
 | `news/{YYYY}/{base}` | `{YYYY}` matches `/^\d{4}$/`; base matches `/^\d{4}-\d{2}-\d{2}(-\d+)?\.md$/` |
 | `calendar.csv` | exact |
 
