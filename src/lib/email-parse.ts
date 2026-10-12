@@ -284,13 +284,17 @@ export function htmlToText(html: string): string {
 }
 
 // If the plain-text body fails to classify (e.g. line breaks were
-// stripped), retry with an HTML-to-text conversion of the HTML body.
+// stripped), try replacing "+" with spaces and if that fails retry
+// with an HTML-to-text conversion of the HTML body.
 export function classifyEmailBody(email: {
   text?: string | null;
   html?: string | null;
 }): EmailUpdate[] {
-  const fromText = classifyEmail(email.text ?? "");
+  const text = email.text ?? "";
+  const fromText = classifyEmail(text);
   if (fromText.some((update) => update.kind !== "unrecognised")) return fromText;
+  const fromPlusText = classifyEmail(text.replace(/\+/g, " "));
+  if (fromPlusText.some((update) => update.kind !== "unrecognised")) return fromPlusText;
   if (!email.html) return fromText;
   const fromHtml = classifyEmail(htmlToText(email.html));
   return fromHtml.some((update) => update.kind !== "unrecognised")
