@@ -63,6 +63,7 @@ export function uploadAsset(
     const stream = configured().uploader.upload_stream(
       {
         folder: options.folder,
+        resource_type: "auto",
         public_id: options.filename,
         tags: options.tags,
         use_filename: true,
