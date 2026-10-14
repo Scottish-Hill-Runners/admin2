@@ -31,7 +31,10 @@ export async function GET(request: Request) {
     console.error("Asset list request failed", errorDetails(error));
     return NextResponse.json(
       { error: "Asset list is unavailable" },
-      { status: 503 },
+      {
+        status: 503,
+        headers: { "Access-Control-Allow-Origin": "*" },
+      },
     );
   }
 }
