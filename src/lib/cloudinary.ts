@@ -114,9 +114,10 @@ export async function listAssetsInFolder(
   folder: string,
 ): Promise<AssetEntry[]> {
   // asset_folder is metadata, not a public_id prefix, so resources() with `prefix` misses assets in dynamic folder mode
+  const api = configured().api;
   let result;
   try {
-    result = await configured().api.resources_by_asset_folder(folder, {
+    result = await api.resources_by_asset_folder(folder, {
       max_results: 500,
       context: true,
       tags: true,
@@ -128,7 +129,21 @@ export async function listAssetsInFolder(
     if (httpCode === 404) return [];
     throw error;
   }
-  return result.resources.map(
+
+  const resources = [...result.resources];
+  let nextCursor = result.next_cursor;
+  while (nextCursor) {
+    result = await api.resources_by_asset_folder(folder, {
+      max_results: 500,
+      next_cursor: nextCursor,
+      context: true,
+      tags: true,
+    });
+    resources.push(...result.resources);
+    nextCursor = result.next_cursor;
+  }
+
+  return resources.map(
     (asset: {
       public_id: string;
       resource_type: string;
