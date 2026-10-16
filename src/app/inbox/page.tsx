@@ -13,6 +13,14 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
+const today = new Date();    
+function formatDate(date: Date): string {
+  if (date.getFullYear() === today.getFullYear())
+    return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  else
+    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
 export default async function InboxPage() {
   const admin = await requireAdmin();
   let emails: Awaited<ReturnType<typeof listReceivedEmails>> = [];
@@ -68,7 +76,7 @@ export default async function InboxPage() {
           <tbody>
             {emails.map((email) =>
               <tr className="border-b border-[var(--line)]" key={email.id}>
-                <td className="p-3">{new Date(email.created_at).toLocaleDateString()}</td>
+                <td className="p-3">{formatDate(new Date(email.created_at))}</td>
                 <td className="p-3"><a href={`mailto:${email.from}`}>{email.from}</a></td>
                 <td className="p-3">
                   <Link className="font-bold underline" href={`/emails/${email.id}`}>
