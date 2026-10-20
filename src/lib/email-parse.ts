@@ -67,25 +67,15 @@ export function validateContentPath(
     path.includes("\\")
   )
     return { error: "Invalid content path" };
-  if (path === "calendar.csv") return { kind: "calendar" };
-  let match = path.match(
-    /^races\/([-\w]+)\/(index\.md|\d{4}(?:-\w+)?\*?\.csv|[-\w]+\.geojson)$/,
-  );
-  if (match)
-    return {
-      kind: match[2].endsWith(".md")
-        ? "markdown"
-        : match[2].endsWith(".geojson")
-          ? "geojson"
-          : "csv",
-    };
-  match = path.match(
-    /^(championships|clubs|info|epics)\/([-\w]+\.md)$/,
-  );
-  if (match) return { kind: "markdown" };
-  match = path.match(/^news\/\d{4}\/\d{4}-\d{2}-\d{2}(?:-\d+)?\.md$/);
-  if (match) return { kind: "markdown" };
-  return { error: "Path is not an allowed content file" };
+  if (path === "calendar.csv")
+    return { kind: "calendar" };
+  if (path.endsWith(".geojson"))
+    return { kind: "geojson" };
+  if (path.endsWith(".csv"))
+    return { kind: "csv" };
+  if (path.endsWith(".md"))
+    return { kind: "markdown" };
+  return { error: "Path is not a known content type" };
 }
 
 export function mergeMarkdown(
