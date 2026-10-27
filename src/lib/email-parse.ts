@@ -281,6 +281,12 @@ export function classifyEmailBody(email: {
   html?: string | null;
 }): EmailUpdate[] {
   const text = email.text ?? "";
+  // Form-encoded bodies have no real spaces at all, so a plain-text parse can
+  // "succeed" with bogus "+" paths; decode first in that case.
+  if (text.includes("+") && !/[ \t]/.test(text.trim())) {
+    const decoded = classifyEmail(text.replace(/\+/g, " "));
+    if (decoded.some((update) => update.kind !== "unrecognised")) return decoded;
+  }
   const fromText = classifyEmail(text);
   if (fromText.some((update) => update.kind !== "unrecognised")) return fromText;
   const fromPlusText = classifyEmail(text.replace(/\+/g, " "));

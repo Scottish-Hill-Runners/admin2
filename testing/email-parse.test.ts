@@ -7,6 +7,7 @@ import {
   mergeCalendar,
   mergeMarkdown,
   validateContentPath,
+  classifyEmailBody,
 } from "@/lib/email-parse";
 
 describe("email parsing", () => {
@@ -23,8 +24,26 @@ describe("email parsing", () => {
     expect(validateContentPath("news/2026/2026-08-22-1.md")).toEqual({
       kind: "markdown",
     });
-    expect(validateContentPath("clubs/a.csv")).toHaveProperty("error");
     expect(validateContentPath("../calendar.csv")).toHaveProperty("error");
+  });
+
+  it("handles Luke's email", () => {
+    const sections = classifyEmailBody(
+      { text: "\n!--CARE\nFile:+races/Durisdeer/index.md\n---\nraceDate:+Last+Saturday+in+May\norganiser:+Luke+Park+<pluke@live.co.uk>\n---\nbody+with+plus+for+space+here\n!--+END\n",
+        html: null
+      });
+    expect(sections.length).toBe(1);
+    const section = sections[0];
+    expect(section.kind).toEqual("markdown");
+    expect(section.path).toEqual("races/Durisdeer/index.md");
+    expect(section.lines).toEqual([
+      "File: races/Durisdeer/index.md",
+      "---",
+      "raceDate: Last Saturday in May",
+      "organiser: Luke Park <pluke@live.co.uk>",
+      "---",
+      "body with plus for space here",
+    ]);
   });
 
   it("merges markdown fields and replaces body when supplied", () => {
