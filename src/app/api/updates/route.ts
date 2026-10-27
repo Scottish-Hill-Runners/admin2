@@ -39,8 +39,11 @@ export async function GET() {
         } catch (error) {
           console.error("Unable to classify email", email.id, errorDetails(error));
         }
+        const subject = email.subject.includes("+") && !/[ \t]/.test(email.subject.trim())
+          ? email.subject.replace(/\+/g, " ")
+          : email.subject;
         return {
-          subject: email.subject,
+          subject: subject,
           created_at: email.created_at,
           status: record?.status,
           updatedAt: record?.updatedAt,
