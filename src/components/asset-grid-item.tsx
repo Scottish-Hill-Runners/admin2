@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { ManagedAssetCard, thumbnailUrl } from "@/components/managed-asset-card";
+import { ManagedAssetCard } from "@/components/managed-asset-card";
+import { thumbnailUrl } from "@/lib/asset-thumbnail";
 import type { AssetEntry } from "@/lib/cloudinary";
 
 // A compact thumbnail tile that expands into the full ManagedAssetCard when clicked.
