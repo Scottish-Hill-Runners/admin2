@@ -2,7 +2,7 @@ import { requireAdmin } from "@/lib/auth-session";
 import { readCache } from "@/lib/asset-cache";
 import { env } from "@/lib/env";
 import { AssetUploadForm } from "@/components/asset-upload-form";
-import { ManagedAssetCard } from "@/components/managed-asset-card";
+import { AssetGridItem } from "@/components/asset-grid-item";
 import { BackHomeLink } from "@/components/back-home-link";
 
 const FOLDER = "portraits";
@@ -36,9 +36,9 @@ export default async function PortraitsPage() {
         <AssetUploadForm folder={FOLDER} />
       </div>
 
-      <div className="mt-8 grid gap-3 md:grid-cols-2">
+      <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         {cache.assets.map((asset) => (
-          <ManagedAssetCard
+          <AssetGridItem
             key={asset.public_id}
             asset={asset}
             folder={FOLDER}
