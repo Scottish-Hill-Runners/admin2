@@ -15,6 +15,24 @@ export async function getEmailStatuses() {
   return items as Record<string, EmailStatusRecord>;
 }
 
+const statusVerbs: Record<EmailStatus, string> = {
+  pending: "is pending review",
+  approved: "was approved",
+  declined: "was declined",
+  "no-action": "was marked as no action needed",
+  junk: "was marked as junk",
+};
+
+// Human-readable summary of who made a review decision and when, e.g.
+// "This update was approved by Jane Smith on 1 Jan 2026, 09:00."
+export function describeEmailStatus(record: EmailStatusRecord): string {
+  const verb = statusVerbs[record.status];
+  const when = new Date(record.updatedAt).toLocaleString();
+  return record.admin
+    ? `This update ${verb} by ${record.admin} on ${when}.`
+    : `This update ${verb} on ${when}.`;
+}
+
 export async function updateStatus(
   id: string,
   status: EmailStatus,

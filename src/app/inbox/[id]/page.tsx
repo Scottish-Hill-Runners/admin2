@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/auth-session";
 import { getReceivedEmail } from "@/lib/resend";
 import { ensureStagingBranch } from "@/lib/github";
 import { previewEmail } from "@/lib/review-preview";
+import { getEmailStatuses, describeEmailStatus } from "@/lib/email-status";
 import { ReviewActions } from "@/components/review-actions";
 import { LineDiff } from "@/components/line-diff";
 import { BackHomeLink } from "@/components/back-home-link";
@@ -20,6 +21,27 @@ export default async function EmailReviewPage({ params }: { params: Promise<{ id
         <h1 className="text-4xl">This email could not be loaded.</h1>
         <p className="mt-4">Please return to the inbox and try again.</p>
       </main>);
+
+  const statuses = await getEmailStatuses();
+  const record = statuses[id];
+  if (record && record.status !== "pending")
+    return (
+      <main className="min-h-screen px-6 py-8 md:px-16">
+        <BackHomeLink />
+        <p className="text-sm font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
+          Review update
+        </p>
+        <h1 className="mt-3 max-w-4xl text-5xl leading-none">
+          {email.subject || "(no subject)"}
+        </h1>
+        <p className="mt-4 text-lg">
+          From {email.from}
+        </p>
+        <p className="mt-8 border-2 border-[var(--ink)] bg-[var(--accent)] p-5 text-lg font-bold">
+          {describeEmailStatus(record)}
+        </p>
+      </main>);
+
   let updates: Awaited<ReturnType<typeof previewEmail>>;
   try {
     await ensureStagingBranch(admin.githubAccessToken);
