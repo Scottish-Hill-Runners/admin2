@@ -6,6 +6,7 @@ import { getEmailStatuses, describeEmailStatus } from "@/lib/email-status";
 import { ReviewActions } from "@/components/review-actions";
 import { LineDiff } from "@/components/line-diff";
 import { BackHomeLink } from "@/components/back-home-link";
+import { RawEmailView } from "@/components/raw-email-view";
 
 export default async function EmailReviewPage({ params }: { params: Promise<{ id: string }> }) {
   const admin = await requireAdmin();
@@ -40,6 +41,7 @@ export default async function EmailReviewPage({ params }: { params: Promise<{ id
         <p className="mt-8 border-2 border-[var(--ink)] bg-[var(--accent)] p-5 text-lg font-bold">
           {describeEmailStatus(record)}
         </p>
+        <RawEmailView text={email.text} html={email.html} />
       </main>);
 
   let updates: Awaited<ReturnType<typeof previewEmail>>;
@@ -49,10 +51,11 @@ export default async function EmailReviewPage({ params }: { params: Promise<{ id
   } catch (error) {
     console.error("Unable to preview email update", error instanceof Error ? error.message : "unknown error");
     return (
-      <main className="p-8">
+      <main className="min-h-screen px-6 py-8 md:px-16">
         <BackHomeLink />
         <h1 className="text-4xl">This update could not be loaded.</h1>
         <p className="mt-4">Please return to the inbox and try again.</p>
+        <RawEmailView text={email.text} html={email.html} />
       </main>);
   }
   return (
@@ -67,6 +70,7 @@ export default async function EmailReviewPage({ params }: { params: Promise<{ id
     <p className="mt-4 text-lg">
       From {email.from}
     </p>
+    <RawEmailView text={email.text} html={email.html} />
     {updates.map(({ update, content, existing }, index) => (
       <section key={update.path ?? index} className="mt-10 border-t-2 border-[var(--ink)] pt-5">
         <p className="font-bold uppercase">
