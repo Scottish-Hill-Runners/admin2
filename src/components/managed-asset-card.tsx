@@ -23,10 +23,13 @@ export function ManagedAssetCard({
   asset,
   folder,
   cloudName,
+  bare = false,
 }: {
   asset: AssetEntry;
   folder: string;
   cloudName?: string;
+  /** Skip the outer border/padding — used when an ancestor (e.g. an accordion item) already provides it. */
+  bare?: boolean;
 }) {
   const [editState, editAction, editing] = useActionState(
     updateManagedAssetMetadata,
@@ -40,7 +43,7 @@ export function ManagedAssetCard({
   const thumbnail = cloudName ? thumbnailUrl(cloudName, asset) : undefined;
 
   return (
-    <div className="border border-[var(--line)] p-4">
+    <div className={bare ? undefined : "border border-[var(--line)] p-4"}>
       {thumbnail && (
         <Image
           src={thumbnail}

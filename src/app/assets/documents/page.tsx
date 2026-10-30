@@ -2,7 +2,7 @@ import { requireAdmin } from "@/lib/auth-session";
 import { readCache } from "@/lib/asset-cache";
 import { env } from "@/lib/env";
 import { AssetUploadForm } from "@/components/asset-upload-form";
-import { ManagedAssetCard } from "@/components/managed-asset-card";
+import { AssetAccordionItem } from "@/components/asset-accordion-item";
 
 const FOLDER = "documents";
 
@@ -33,9 +33,9 @@ export default async function DocumentsPage() {
         <AssetUploadForm folder={FOLDER} />
       </div>
 
-      <div className="mt-8 grid gap-3 md:grid-cols-2">
+      <div className="mt-8 grid gap-3">
         {cache.assets.map((asset) => (
-          <ManagedAssetCard
+          <AssetAccordionItem
             key={asset.public_id}
             asset={asset}
             folder={FOLDER}
