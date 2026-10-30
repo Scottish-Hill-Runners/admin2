@@ -1,10 +1,12 @@
 import { requireAdmin } from "@/lib/auth-session";
 import { PublishButton } from "@/components/publish-button";
+import { BackHomeLink } from "@/components/back-home-link";
 
 export default async function PublishPage() {
   await requireAdmin();
   return (
     <main className="min-h-screen px-6 py-8 md:px-16">
+      <BackHomeLink />
       <p className="text-sm font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
         Publish
       </p>

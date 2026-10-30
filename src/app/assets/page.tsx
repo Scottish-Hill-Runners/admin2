@@ -2,6 +2,7 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth-session";
 import { readFoldersCache, refreshFolders } from "@/lib/asset-cache";
+import { BackHomeLink } from "@/components/back-home-link";
 
 export default async function AssetsPage() {
   await requireAdmin();
@@ -15,11 +16,13 @@ export default async function AssetsPage() {
   if (!cache)
     return (
       <main className="p-8">
+        <BackHomeLink />
         <h1 className="text-4xl">Assets are not available</h1>
         <p className="mt-4">Asset storage is not configured yet.</p>
       </main>);
   return (
       <main className="min-h-screen px-6 py-8 md:px-16">
+        <BackHomeLink />
         <p className="text-sm font-bold uppercase tracking-[0.18em] text-[var(--accent)]">Assets</p>
         <h1 className="mt-3 text-5xl">Asset list</h1>
         <p className="mt-6">Last refreshed {new Date(cache.generatedAt).toLocaleString()}.</p>

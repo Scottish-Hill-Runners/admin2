@@ -330,13 +330,13 @@ Individual permission: Yes
 |---|---|
 | `/sign-in` | GitHub sign-in; plain-language copy |
 | `/` | Inbox: table of received emails — date, sender, subject, detected update type, status badge. Filter buttons: All / Pending / Approved / Declined / No action / Junk. Loading this page triggers pending-backfill + stale cleanup (§5.2) |
-| `/emails/[id]` | Review screen (below) |
+| `/inbox/[id]` | Review screen (below) |
 | `/publish` | Shows count of commits on `staging` ahead of `main`, "Publish updates" button → §5.3 `publishStagingToLive()` |
 | `/assets` | Cache info (generated-at, folder count) + "Refresh asset list" button (flush + rebuild) |
 
 Layout: a slim shared shell (app name, signed-in admin name, nav: Inbox / Publish / Assets / Sign out). Mobile-friendly, high-contrast, large click targets — admins are non-technical.
 
-### Review screen (`/emails/[id]`)
+### Review screen (`/inbox/[id]`)
 
 1. Load email via Resend; classify (§6.3); load current file(s) from `staging` (creating the branch if needed).
 2. Compute the **merged result** and render a unified line diff (jsdiff) old → new per file, plus the parsed summary (what will change, in plain words).

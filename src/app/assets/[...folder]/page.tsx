@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth-session";
 import { readCache, refreshCache } from "@/lib/asset-cache";
 import { env } from "@/lib/env";
 import Image from "next/image";
+import { BackHomeLink } from "@/components/back-home-link";
 
 export default async function AssetFolderPage({
   params,
@@ -25,6 +26,7 @@ export default async function AssetFolderPage({
 
   return (
     <main className="min-h-screen px-6 py-8 md:px-16">
+      <BackHomeLink />
       <p className="text-sm font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
         Assets
       </p>

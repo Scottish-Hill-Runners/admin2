@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { approveEmail, updateEmailStatus, type ReviewActionState } from "@/app/emails/[id]/actions";
+import { approveEmail, updateEmailStatus, type ReviewActionState } from "@/app/inbox/[id]/actions";
 import { ContentEditor } from "@/components/content-editor";
 import type { PreviewedUpdate } from "@/lib/review-preview";
 

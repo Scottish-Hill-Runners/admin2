@@ -1,8 +1,10 @@
 import { signIn } from "@/auth";
+import { BackHomeLink } from "@/components/back-home-link";
 
 export default function SignInPage() {
   return (
   <main className="min-h-screen px-6 py-10 md:px-16">
+    <BackHomeLink />
     <div className="max-w-xl border-t-4 border-[var(--accent)] pt-6">
       <p className="text-sm font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
         Review desk

@@ -4,6 +4,7 @@ import { ensureStagingBranch } from "@/lib/github";
 import { previewEmail } from "@/lib/review-preview";
 import { ReviewActions } from "@/components/review-actions";
 import { LineDiff } from "@/components/line-diff";
+import { BackHomeLink } from "@/components/back-home-link";
 
 export default async function EmailReviewPage({ params }: { params: Promise<{ id: string }> }) {
   const admin = await requireAdmin();
@@ -15,6 +16,7 @@ export default async function EmailReviewPage({ params }: { params: Promise<{ id
   if (!email)
     return (
       <main className="p-8">
+        <BackHomeLink />
         <h1 className="text-4xl">This email could not be loaded.</h1>
         <p className="mt-4">Please return to the inbox and try again.</p>
       </main>);
@@ -26,12 +28,14 @@ export default async function EmailReviewPage({ params }: { params: Promise<{ id
     console.error("Unable to preview email update", error instanceof Error ? error.message : "unknown error");
     return (
       <main className="p-8">
+        <BackHomeLink />
         <h1 className="text-4xl">This update could not be loaded.</h1>
         <p className="mt-4">Please return to the inbox and try again.</p>
       </main>);
   }
   return (
   <main className="min-h-screen px-6 py-8 md:px-16">
+    <BackHomeLink />
     <p className="text-sm font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
       Review update
     </p>

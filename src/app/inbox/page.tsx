@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-session";
 import { listReceivedEmails } from "@/lib/resend";
 import { backfillAndPrune } from "@/lib/email-status";
+import { BackHomeLink } from "@/components/back-home-link";
 
 // Serverless cold starts occasionally drop the first outbound call; one retry
 // mirrors what a manual page refresh already does.
@@ -41,6 +42,7 @@ export default async function InboxPage() {
   if (unavailable)
     return (
       <main className="p-8">
+        <BackHomeLink />
         <h1 className="text-4xl">Saved updates</h1>
         <p className="mt-4">
           Email review is not available right now. Please try again later.
@@ -48,6 +50,7 @@ export default async function InboxPage() {
     </main>);
   return (
     <main className="min-h-screen px-6 py-8 md:px-16">
+      <BackHomeLink />
       <header className="mb-10 flex items-center justify-between border-b border-[var(--line)] pb-5">
         <div>
           <p className="m-0 text-sm font-bold uppercase tracking-[0.18em]">Review desk</p>
@@ -79,7 +82,7 @@ export default async function InboxPage() {
                 <td className="p-3">{formatDate(new Date(email.created_at))}</td>
                 <td className="p-3"><a href={`mailto:${email.from}`}>{email.from}</a></td>
                 <td className="p-3">
-                  <Link className="font-bold underline" href={`/emails/${email.id}`}>
+                  <Link className="font-bold underline" href={`/inbox/${email.id}`}>
                     {email.subject || "(no subject)"}
                   </Link>
                   </td>
