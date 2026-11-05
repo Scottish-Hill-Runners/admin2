@@ -57,7 +57,16 @@ export async function approveEmail(
     return { status: "error", message: "There is no email to approve." };
   try {
     const email = await getReceivedEmail(id);
-    const updates = classifyEmailBody(email);
+    const correctedEmailText = formData.get("emailText");
+    const updates =
+      typeof correctedEmailText === "string"
+        ? classifyEmailBody({ text: correctedEmailText })
+        : classifyEmailBody(email);
+    if (updates.some((update) => update.kind === "unrecognised"))
+      return {
+        status: "error",
+        message: "The email text could not be parsed. Correct it and try again.",
+      };
     if (updates.some((update) => update.kind === "blob-upload")) {
       await uploadEmailAsset(email);
       await updateStatus(id, "approved", admin.user.name ?? admin.user.login);
@@ -79,17 +88,20 @@ export async function approveEmail(
         editable.map(async (update, index) => {
           const path = update.path as string;
           const current = await getFile(admin.githubAccessToken, path);
-          const fresh =
-            update.kind === "markdown"
-              ? mergeMarkdown(current?.content ?? null, update.lines ?? [])
-              : update.kind === "csv-minor-edit"
-                ? applyMinorEdit(current?.content ?? "", update.values ?? {})
-                : update.kind === "calendar"
-                  ? mergeCalendar(current?.content ?? "", update.lines ?? [])
-                  : update.body ?? "";
-          const edited = formData.get(`content-${index}`);
+          const edited =
+            correctedEmailText === null
+              ? formData.get(`content-${index}`)
+              : null;
           const content =
-            edited != null && String(edited) !== fresh ? String(edited) : fresh;
+            typeof edited === "string"
+              ? edited
+              : update.kind === "markdown"
+                ? mergeMarkdown(current?.content ?? null, update.lines ?? [])
+                : update.kind === "csv-minor-edit"
+                  ? applyMinorEdit(current?.content ?? "", update.values ?? {})
+                  : update.kind === "calendar"
+                    ? mergeCalendar(current?.content ?? "", update.lines ?? [])
+                    : update.body ?? "";
           return { path, content, sha: current?.sha };
         }),
       );
@@ -115,4 +127,3 @@ export async function approveEmail(
   // otherwise be swallowed by the catch block above.
   redirect("/inbox");
 }
-

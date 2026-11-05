@@ -7,32 +7,45 @@ import type { PreviewedUpdate } from "@/lib/review-preview";
 
 const initialState: ReviewActionState = { status: "idle" };
 
-export function ReviewActions({ emailId, updates }: {
-   emailId: string; updates: PreviewedUpdate[]
+export function ReviewActions({ emailId, emailText, updates }: {
+   emailId: string; emailText: string; updates: PreviewedUpdate[]
   }) {
   const [approval, approve, approving] = useActionState(approveEmail, initialState);
   const [status, updateStatus, updating] = useActionState(updateEmailStatus, initialState);
   const message = approval.message ?? status.message;
   const editable = updates.filter(({ update }) => update.path && update.kind !== "unrecognised");
+  const needsEmailCorrection = updates.some(({ previewError }) => previewError);
   const canApprove = editable.length > 0 || updates.some(({ update }) => update.kind === "blob-upload");
   return (
   <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_0.6fr]">
     {canApprove &&
       <form action={approve} className="grid gap-6 border border-[var(--line)] bg-white/60 p-5">
-        {editable.map(({ update, content }, index) => (
-          <div key={update.path}>
-            <ContentEditor
-              id={`content-${index}`}
-              name={`content-${index}`}
-              kind={update.kind}
-              defaultValue={content}
-              label={`Saved content — ${update.path}`}
+        {needsEmailCorrection ? (
+          <label className="grid gap-2 font-bold" htmlFor="emailText">
+            Correct the email text
+            <textarea
+              className="min-h-96 w-full border border-[var(--line)] bg-white p-3 font-mono text-sm font-normal"
+              id="emailText"
+              name="emailText"
+              defaultValue={emailText}
             />
-            <input type="hidden" name={`path-${index}`} value={update.path} />
-          </div>
-        ))}
-        <input type="hidden" name="fileCount" value={editable.length} />
+          </label>
+        ) : (
+          editable.map(({ update, content }, index) => (
+            <div key={update.path}>
+              <ContentEditor
+                id={`content-${index}`}
+                name={`content-${index}`}
+                kind={update.kind}
+                defaultValue={content}
+                label={`Saved content — ${update.path}`}
+              />
+              <input type="hidden" name={`path-${index}`} value={update.path} />
+            </div>
+          ))
+        )}
         <input type="hidden" name="emailId" value={emailId} />
+        {approval.message && <p className="text-sm">{approval.message}</p>}
         <button
           className="mt-4 border-2 border-[var(--ink)] bg-[var(--accent)] px-5 py-3 font-bold"
           disabled={approving}
