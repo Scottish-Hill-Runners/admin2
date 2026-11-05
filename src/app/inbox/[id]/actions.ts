@@ -12,11 +12,64 @@ import { getReceivedEmail } from "@/lib/resend";
 import { ensureStagingBranch, getFile, commitFiles } from "@/lib/github";
 import { updateStatus, type EmailStatus } from "@/lib/email-status";
 import { uploadEmailAsset } from "@/lib/blob-upload";
+import { previewEmail, type PreviewedUpdate } from "@/lib/review-preview";
 
 export type ReviewActionState = {
   status: "idle" | "success" | "error";
   message?: string;
 };
+
+export type EmailCorrectionState = {
+  status: "idle" | "success" | "error";
+  emailText?: string;
+  updates?: PreviewedUpdate[];
+  message?: string;
+};
+
+export async function previewCorrectedEmail(
+  _previous: EmailCorrectionState,
+  formData: FormData,
+): Promise<EmailCorrectionState> {
+  const admin = await requireAdmin();
+  const id = String(formData.get("emailId") ?? "");
+  const emailText = formData.get("emailText");
+  if (!id || typeof emailText !== "string")
+    return {
+      status: "error",
+      message: "The corrected email text is missing. Please try again.",
+    };
+
+  try {
+    const email = await getReceivedEmail(id);
+    const correctedEmail = { ...email, text: emailText };
+    const updates = await previewEmail(admin.githubAccessToken, correctedEmail);
+    if (
+      updates.some(
+        ({ update, previewError }) =>
+          update.kind === "unrecognised" || Boolean(previewError),
+      )
+    )
+      return {
+        status: "error",
+        emailText,
+        message:
+          "The corrected email still cannot be parsed and merged. Make another correction and try again.",
+      };
+
+    return { status: "success", emailText, updates };
+  } catch (error) {
+    console.error(
+      "Unable to preview corrected email",
+      error instanceof Error ? error.message : "unknown error",
+    );
+    return {
+      status: "error",
+      emailText,
+      message:
+        "The corrected email could not be previewed. Please check it and try again.",
+    };
+  }
+}
 
 export async function updateEmailStatus(
   _previous: ReviewActionState,
@@ -88,10 +141,7 @@ export async function approveEmail(
         editable.map(async (update, index) => {
           const path = update.path as string;
           const current = await getFile(admin.githubAccessToken, path);
-          const edited =
-            correctedEmailText === null
-              ? formData.get(`content-${index}`)
-              : null;
+          const edited = formData.get(`content-${index}`);
           const content =
             typeof edited === "string"
               ? edited

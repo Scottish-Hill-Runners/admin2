@@ -24,7 +24,10 @@ vi.mock("@/lib/blob-upload", () => ({
   uploadEmailAsset: vi.fn(),
 }));
 
-import { approveEmail } from "@/app/inbox/[id]/actions";
+import {
+  approveEmail,
+  previewCorrectedEmail,
+} from "@/app/inbox/[id]/actions";
 import { requireAdmin } from "@/lib/auth-session";
 import { commitFiles, ensureStagingBranch, getFile } from "@/lib/github";
 import { updateStatus } from "@/lib/email-status";
@@ -61,7 +64,7 @@ describe("email approval", () => {
     vi.mocked(updateStatus).mockResolvedValue(undefined);
   });
 
-  it("re-parses corrected email text and merges its frontmatter with the current file", async () => {
+  it("previews corrected email without committing, then approves the reviewed content once", async () => {
     vi.mocked(getFile).mockResolvedValue({
       content: "---\ntitle: Existing\nkeep: yes\n---\nOld body\n",
       sha: "current-sha",
@@ -78,14 +81,30 @@ describe("email approval", () => {
       "Body",
       "!-- END",
     ].join("\n");
-    const formData = new FormData();
-    formData.set("emailId", "email-id");
-    formData.set("emailText", correctedEmailText);
+    const correctionForm = new FormData();
+    correctionForm.set("emailId", "email-id");
+    correctionForm.set("emailText", correctedEmailText);
+    const preview = await previewCorrectedEmail(
+      { status: "idle" },
+      correctionForm,
+    );
+
+    expect(preview.status).toBe("success");
+    expect(commitFiles).not.toHaveBeenCalled();
+
+    const approvalForm = new FormData();
+    approvalForm.set("emailId", "email-id");
+    approvalForm.set("emailText", correctedEmailText);
+    approvalForm.set(
+      "content-0",
+      "---\ntitle: News\nkeep: yes\nexcerpt: Reviewed by admin\n---\n\nBody\n",
+    );
 
     await expect(
-      approveEmail({ status: "idle" }, formData),
+      approveEmail({ status: "idle" }, approvalForm),
     ).rejects.toThrow("redirected");
 
+    expect(commitFiles).toHaveBeenCalledTimes(1);
     expect(commitFiles).toHaveBeenCalledWith(
       "token",
       expect.any(Array),
@@ -99,7 +118,7 @@ describe("email approval", () => {
     expect(matter(file.content).data).toMatchObject({
       title: "News",
       keep: "yes",
-      excerpt: "This excerpt has acorrected continuation",
+      excerpt: "Reviewed by admin",
     });
     expect(matter(file.content).content).toContain("Body");
     expect(updateStatus).toHaveBeenCalledWith("email-id", "approved", "Admin");

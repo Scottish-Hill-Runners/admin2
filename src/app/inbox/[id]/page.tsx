@@ -4,7 +4,6 @@ import { ensureStagingBranch } from "@/lib/github";
 import { previewEmail } from "@/lib/review-preview";
 import { getEmailStatuses, describeEmailStatus } from "@/lib/email-status";
 import { ReviewActions } from "@/components/review-actions";
-import { LineDiff } from "@/components/line-diff";
 import { BackHomeLink } from "@/components/back-home-link";
 import { RawEmailView } from "@/components/raw-email-view";
 
@@ -71,7 +70,7 @@ export default async function EmailReviewPage({ params }: { params: Promise<{ id
       From {email.from}
     </p>
     <RawEmailView text={email.text} html={email.html} />
-    {updates.map(({ update, content, existing, previewError }, index) => (
+    {updates.map(({ update, previewError }, index) => (
       <section key={update.path ?? index} className="mt-10 border-t-2 border-[var(--ink)] pt-5">
         <p className="font-bold uppercase">
           Detected: {update.kind}
@@ -84,11 +83,10 @@ export default async function EmailReviewPage({ params }: { params: Promise<{ id
             {previewError}
           </p>
         )}
-        {update.kind === "blob-upload" ?
+        {update.kind === "blob-upload" &&
           <pre className="mt-8 whitespace-pre-wrap border border-[var(--line)] bg-white/50 p-5 text-sm">
             {email.text}
           </pre>
-          : update.path && !previewError && <LineDiff after={content} before={existing ?? ""} />
         }
       </section>
     ))}
