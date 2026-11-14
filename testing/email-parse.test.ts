@@ -46,6 +46,34 @@ describe("email parsing", () => {
     ]);
   });
 
+  it("decodes form-encoded text when a few literal spaces remain", () => {
+    const [update] = classifyEmailBody({
+      text: [
+        "!--+EDIT",
+        "File:+news/2026/2026-11-13-71563.md",
+        "---",
+        "title:+Southern+Winter+Series",
+        "excerpt:+The+new+Southern+Winter+Race+Series",
+        "date:+2026-11-13",
+        "---",
+        "The+series+is+open+to+anyone+aged+16+upwards+with+the+exception+of +Criffel.",
+        "!--+END",
+      ].join("\n"),
+    });
+
+    expect(update.kind).toBe("markdown");
+    expect(update.path).toBe("news/2026/2026-11-13-71563.md");
+    const frontmatter = matter(mergeMarkdown(null, update.lines ?? [])).data;
+    expect(frontmatter).toMatchObject({
+      title: "Southern Winter Series",
+      excerpt: "The new Southern Winter Race Series",
+    });
+    expect(frontmatter.date).toEqual(new Date("2026-11-13T00:00:00.000Z"));
+    expect(update.body).toContain(
+      "The series is open to anyone aged 16 upwards with the exception of  Criffel.",
+    );
+  });
+
   it("merges markdown fields and replaces body when supplied", () => {
     const result = mergeMarkdown("---\ntitle: Old\nkeep: yes\n---\nOld body", [
       "File: info/Test.md",
