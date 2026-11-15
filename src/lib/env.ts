@@ -30,6 +30,9 @@ const envSchema = z
     GLOBAL_CONFIG_API_TOKEN: optional,
     GLOBAL_CONFIG_ID: optional,
     BLOB_READ_WRITE_TOKEN: optional,
+    FACEBOOK_PAGE_ID: optional,
+    FACEBOOK_PAGE_ACCESS_TOKEN: optional,
+    FACEBOOK_APP_SECRET: optional,
     DEV_BYPASS_LOGIN: optional,
     DEV_BYPASS_GITHUB_TOKEN: optional,
   })

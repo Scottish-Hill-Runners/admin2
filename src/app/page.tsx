@@ -38,6 +38,9 @@ export default async function HomePage() {
           <Link href="/publish" className="border-2 border-[var(--ink)] bg-[var(--accent)] p-5 font-bold">
             Publish
           </Link>
+          <Link href="/facebook-feed" className="border-2 border-[var(--ink)] p-5 font-bold">
+            Facebook feed
+          </Link>
         </div>
         <form
           action={async () => {
