@@ -14,3 +14,12 @@ npm run dev
 ```
 
 The implementation specification is maintained in `ADMIN2-SPEC.md` during initial development.
+
+## Facebook feed caching
+
+The public `/api/facebook-feed` response has an ETag and must be revalidated
+before reuse. Browsers can send `If-None-Match` and receive `304 Not Modified`
+when the public feed is unchanged. Refreshing or removing a post changes the
+validator when the public response changes, without waiting for a cache TTL.
+Each revalidation still reads the current Blob; this saves response bandwidth,
+not the function invocation or Blob read. Errors are not cached.
