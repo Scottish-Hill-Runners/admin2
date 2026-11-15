@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   get: vi.fn(),
+  head: vi.fn(),
   put: vi.fn(),
   list: vi.fn(),
   del: vi.fn(),
@@ -11,7 +12,10 @@ const mocks = vi.hoisted(() => ({
   published: vi.fn(),
 }));
 
-vi.mock("@vercel/blob", () => ({ get: mocks.get, put: mocks.put, list: mocks.list, del: mocks.del }));
+vi.mock("@vercel/blob", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@vercel/blob")>(),
+  get: mocks.get, head: mocks.head, put: mocks.put, list: mocks.list, del: mocks.del,
+}));
 vi.mock("@/lib/env", () => ({ env: { BLOB_READ_WRITE_TOKEN: "test-token" } }));
 vi.mock("@/lib/cloudinary", () => ({
   configured: () => ({ uploader: { destroy: mocks.destroy, upload_stream: mocks.upload } }),
@@ -22,6 +26,7 @@ vi.mock("@/lib/facebook-graph", () => ({
 }));
 
 import { getFacebookFeed, getFacebookFeedForAdmin, refreshFacebookFeed, removeFacebookPost } from "@/lib/facebook-feed";
+import { BlobPreconditionFailedError } from "@vercel/blob";
 
 const old = {
   id: "123_1", createdTime: "2026-01-01T00:00:00Z", message: "Old",
@@ -111,6 +116,32 @@ describe("Facebook feed refresh", () => {
     await expect(refreshFacebookFeed()).rejects.toThrow("Facebook unavailable");
     expect(mocks.put).not.toHaveBeenCalled();
     expect(mocks.destroy).not.toHaveBeenCalled();
+  });
+
+  it("reports ETag comparisons when a conditional feed write fails", async () => {
+    const error = new BlobPreconditionFailedError();
+    mocks.get.mockImplementation(async () => ({
+      ...stored(),
+      headers: new Headers({ "content-encoding": "gzip" }),
+    }));
+    mocks.head.mockResolvedValue({ etag: "metadata-etag" });
+    mocks.put.mockRejectedValue(error);
+    mocks.published.mockResolvedValue(true);
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      await expect(refreshFacebookFeed()).rejects.toBe(error);
+      expect(log).toHaveBeenCalledWith("Facebook feed Blob ETag diagnostic", {
+        currentBlobFound: true,
+        writeMatchesCurrentRead: true,
+        writeMatchesMetadata: false,
+        currentReadMatchesMetadata: false,
+        writeEtagIsWeak: false,
+        currentReadHasEtag: true,
+        contentEncoding: "gzip",
+      });
+    } finally {
+      log.mockRestore();
+    }
   });
 
   it("suppresses manually removed posts and cleans up only their own photos", async () => {

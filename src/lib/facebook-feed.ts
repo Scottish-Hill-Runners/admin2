@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { del, get, list, put } from "@vercel/blob";
+import { BlobPreconditionFailedError, del, get, head, list, put } from "@vercel/blob";
 import { z } from "zod";
 import { configured } from "@/lib/cloudinary";
 import { env } from "@/lib/env";
@@ -43,13 +43,39 @@ async function readFeed(): Promise<{ feed: Feed; etag?: string }> {
 }
 
 async function writeFeed(feed: Feed, etag?: string) {
-  return put(path, JSON.stringify(feed), {
-    access: "private",
-    token: env.BLOB_READ_WRITE_TOKEN,
-    addRandomSuffix: false,
-    abortSignal: AbortSignal.timeout(60_000),
-    ...(etag ? { ifMatch: etag } : { allowOverwrite: false }),
-  });
+  try {
+    return await put(path, JSON.stringify(feed), {
+      access: "private",
+      token: env.BLOB_READ_WRITE_TOKEN,
+      addRandomSuffix: false,
+      abortSignal: AbortSignal.timeout(60_000),
+      ...(etag ? { ifMatch: etag } : { allowOverwrite: false }),
+    });
+  } catch (error) {
+    if (etag && error instanceof BlobPreconditionFailedError) {
+      try {
+        const current = await get(path, {
+          access: "private",
+          token: env.BLOB_READ_WRITE_TOKEN,
+          useCache: false,
+        });
+        if (current?.stream) await current.stream.cancel();
+        const metadata = await head(path, { token: env.BLOB_READ_WRITE_TOKEN });
+        console.error("Facebook feed Blob ETag diagnostic", {
+          currentBlobFound: Boolean(current),
+          writeMatchesCurrentRead: current ? etag === current.blob.etag : null,
+          writeMatchesMetadata: etag === metadata.etag,
+          currentReadMatchesMetadata: current ? current.blob.etag === metadata.etag : null,
+          writeEtagIsWeak: etag.startsWith("W/"),
+          currentReadHasEtag: Boolean(current?.blob.etag),
+          contentEncoding: current?.headers.get("content-encoding") ?? null,
+        });
+      } catch (diagnosticError) {
+        console.error("Facebook feed Blob ETag diagnostic failed", diagnosticError);
+      }
+    }
+    throw error;
+  }
 }
 
 function stripFacebookTracking(message: string) {
