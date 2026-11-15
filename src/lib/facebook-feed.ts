@@ -105,14 +105,29 @@ function stripFacebookTracking(message: string) {
   });
 }
 
+const sentenceSegmenter = new Intl.Segmenter("en-GB", { granularity: "sentence" });
+
+function imageDescription(description: string | undefined) {
+  if (!description?.trim()) return undefined;
+  const firstSentence = sentenceSegmenter.segment(description.trim())[Symbol.iterator]().next().value?.segment.trim();
+  if (!firstSentence) return undefined;
+  const characters = Array.from(firstSentence);
+  if (characters.length <= 200) return firstSentence;
+  const shortened = characters.slice(0, 197).join("");
+  const wordBoundary = shortened.lastIndexOf(" ");
+  return `${wordBoundary >= 100 ? shortened.slice(0, wordBoundary) : shortened}...`;
+}
+
 export async function getFacebookFeed() {
   const { feed } = await readFeed();
   return {
     updatedAt: feed.updatedAt,
-    posts: feed.posts.map(({ id, createdTime, message, images }) => ({
-      id, createdTime, message: stripFacebookTracking(message),
-      images: images.map(({ url, description }) => ({ url, description })),
-    })),
+    posts: feed.posts
+      .filter(({ message, images }) => message.trim().length > 0 || images.length > 0)
+      .map(({ id, createdTime, message, images }) => ({
+        id, createdTime, message: stripFacebookTracking(message),
+        images: images.map(({ url, description }) => ({ url, description: imageDescription(description) })),
+      })),
   };
 }
 

@@ -53,6 +53,22 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("public Facebook feed", () => {
+  it("omits posts without a message or images while retaining text and photo posts", async () => {
+    const posts = [
+      { ...old, id: "123_1", message: "", images: [] },
+      { ...old, id: "123_2", message: " \n\t ", images: [] },
+      { ...old, id: "123_3", message: "Text only", images: [] },
+      { ...old, id: "123_4", message: "", images: old.images },
+      { ...old, id: "123_5", message: "Both", images: old.images },
+    ];
+    mocks.get.mockImplementation(async () => stored(posts));
+
+    expect((await getFacebookFeed()).posts.map((post) => post.id)).toEqual([
+      "123_3", "123_4", "123_5",
+    ]);
+    expect((await getFacebookFeedForAdmin()).posts.map((post) => post.id)).toEqual(posts.map((post) => post.id));
+  });
+
   it("removes fbclid from stored message links without changing other parameters or text", async () => {
     const message = [
       "See https://example.com/supportwall?fbclid=tracking.",
@@ -81,6 +97,39 @@ describe("public Facebook feed", () => {
       ...old, message: "https://example.com/?%66bclid=tracking&ref=a+b#details",
     }]));
     expect((await getFacebookFeed()).posts[0].message).toBe("https://example.com/?ref=a+b#details");
+  });
+
+  it("uses the first sentence of each image description without altering the stored original", async () => {
+    const description = "Ever thought about being a support runner? Now is your chance!";
+    const post = {
+      ...old,
+      images: [
+        { ...old.images[0], description },
+        { ...old.images[0], description: "Runners on a hillside" },
+        { ...old.images[0], description: "  " },
+        old.images[0],
+      ],
+    };
+    mocks.get.mockImplementation(async () => stored([post]));
+
+    const feed = await getFacebookFeed();
+    expect(feed.posts[0].images.map((image) => image.description)).toEqual([
+      "Ever thought about being a support runner?",
+      "Runners on a hillside",
+      undefined,
+      undefined,
+    ]);
+    expect((await getFacebookFeedForAdmin()).posts[0].images[0].description).toBe(description);
+  });
+
+  it("shortens an unusually long first sentence at a word boundary", async () => {
+    const description = `${"hill runners ".repeat(30)}finish the race.`;
+    const post = { ...old, images: [{ ...old.images[0], description }] };
+    mocks.get.mockResolvedValue(stored([post]));
+
+    const result = (await getFacebookFeed()).posts[0].images[0].description;
+    expect(result).toBe(`${"hill runners ".repeat(15).trimEnd()}...`);
+    expect(Array.from(result ?? "")).toHaveLength(197);
   });
 });
 

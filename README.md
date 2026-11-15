@@ -19,6 +19,10 @@ The implementation specification is maintained in `ADMIN2-SPEC.md` during initia
 
 The public feed removes `fbclid` tracking parameters from links in messages,
 including posts already stored in Blob. The stored original is unchanged.
+Image descriptions in the public feed are limited to the first sentence and
+200 characters for concise alt text; the full descriptions remain in Blob.
+Posts without a message or images are omitted from the public feed but remain
+available to administrators.
 
 The public `/api/facebook-feed` response has an ETag and must be revalidated
 before reuse. Browsers can send `If-None-Match` and receive `304 Not Modified`
