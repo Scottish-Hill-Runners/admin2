@@ -52,12 +52,31 @@ async function writeFeed(feed: Feed, etag?: string) {
   });
 }
 
+function stripFacebookTracking(message: string) {
+  return message.replace(/https?:\/\/[^\s<>"']+/gi, (url) => {
+    const punctuation = url.match(/[.,;:!?)\]}]+$/)?.[0] ?? "";
+    const link = url.slice(0, url.length - punctuation.length);
+    const queryStart = link.indexOf("?");
+    const fragmentStart = link.indexOf("#");
+    if (queryStart < 0 || (fragmentStart >= 0 && fragmentStart < queryStart)) return url;
+
+    const queryEnd = fragmentStart < 0 ? link.length : fragmentStart;
+    const parameters = link.slice(queryStart + 1, queryEnd).split("&");
+    const remaining = parameters.filter((parameter) =>
+      new URLSearchParams(parameter).keys().next().value?.toLowerCase() !== "fbclid",
+    );
+    if (remaining.length === parameters.length) return url;
+    const query = remaining.some(Boolean) ? `?${remaining.join("&")}` : "";
+    return link.slice(0, queryStart) + query + link.slice(queryEnd) + punctuation;
+  });
+}
+
 export async function getFacebookFeed() {
   const { feed } = await readFeed();
   return {
     updatedAt: feed.updatedAt,
     posts: feed.posts.map(({ id, createdTime, message, images }) => ({
-      id, createdTime, message,
+      id, createdTime, message: stripFacebookTracking(message),
       images: images.map(({ url, description }) => ({ url, description })),
     })),
   };

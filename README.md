@@ -17,6 +17,9 @@ The implementation specification is maintained in `ADMIN2-SPEC.md` during initia
 
 ## Facebook feed caching
 
+The public feed removes `fbclid` tracking parameters from links in messages,
+including posts already stored in Blob. The stored original is unchanged.
+
 The public `/api/facebook-feed` response has an ETag and must be revalidated
 before reuse. Browsers can send `If-None-Match` and receive `304 Not Modified`
 when the public feed is unchanged. Refreshing or removing a post changes the

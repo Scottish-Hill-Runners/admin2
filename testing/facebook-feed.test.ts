@@ -21,7 +21,7 @@ vi.mock("@/lib/facebook-graph", () => ({
   isFacebookPostPublished: mocks.published,
 }));
 
-import { refreshFacebookFeed, removeFacebookPost } from "@/lib/facebook-feed";
+import { getFacebookFeed, getFacebookFeedForAdmin, refreshFacebookFeed, removeFacebookPost } from "@/lib/facebook-feed";
 
 const old = {
   id: "123_1", createdTime: "2026-01-01T00:00:00Z", message: "Old",
@@ -46,6 +46,38 @@ beforeEach(() => {
 });
 
 afterEach(() => vi.unstubAllGlobals());
+
+describe("public Facebook feed", () => {
+  it("removes fbclid from stored message links without changing other parameters or text", async () => {
+    const message = [
+      "See https://example.com/supportwall?fbclid=tracking.",
+      "(https://example.com/path?first=a%20b&fbclid=one&last=2#section)",
+      "https://example.com/?fbclid=one&x=1&FBCLID=two",
+      "https://example.com/path?fbclid=one#section",
+      "https://example.com/unchanged?ref=fbclid#part?fbclid=fragment",
+      "Plain fbclid=not-a-link",
+    ].join("\n");
+    mocks.get.mockImplementation(async () => stored([{ ...old, message }]));
+
+    const feed = await getFacebookFeed();
+    expect(feed.posts[0].message).toBe([
+      "See https://example.com/supportwall.",
+      "(https://example.com/path?first=a%20b&last=2#section)",
+      "https://example.com/?x=1",
+      "https://example.com/path#section",
+      "https://example.com/unchanged?ref=fbclid#part?fbclid=fragment",
+      "Plain fbclid=not-a-link",
+    ].join("\n"));
+    expect((await getFacebookFeedForAdmin()).posts[0].message).toBe(message);
+  });
+
+  it("removes an encoded fbclid key while retaining the other query and fragment", async () => {
+    mocks.get.mockResolvedValue(stored([{
+      ...old, message: "https://example.com/?%66bclid=tracking&ref=a+b#details",
+    }]));
+    expect((await getFacebookFeed()).posts[0].message).toBe("https://example.com/?ref=a+b#details");
+  });
+});
 
 describe("Facebook feed refresh", () => {
   it("keeps an ambiguous post and reports it without deleting its images", async () => {
