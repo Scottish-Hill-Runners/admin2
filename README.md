@@ -26,3 +26,6 @@ when the public feed is unchanged. Refreshing or removing a post changes the
 validator when the public response changes, without waiting for a cache TTL.
 Each revalidation still reads the current Blob; this saves response bandwidth,
 not the function invocation or Blob read. Errors are not cached.
+
+Feed reads request an uncompressed Blob so refreshes and removals can use its
+strong ETag for conditional writes. A missing or weak ETag prevents a write.

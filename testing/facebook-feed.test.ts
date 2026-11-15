@@ -85,6 +85,45 @@ describe("public Facebook feed", () => {
 });
 
 describe("Facebook feed refresh", () => {
+  it("requests an uncompressed feed and uses its strong ETag for the conditional write", async () => {
+    mocks.get.mockImplementation(async (_path: string, options: { headers?: Record<string, string> }) => ({
+      ...stored(),
+      blob: { etag: options.headers?.["Accept-Encoding"] === "identity" ? '"strong-etag"' : 'W/"compressed-etag"' },
+    }));
+    mocks.published.mockResolvedValue(true);
+    await refreshFacebookFeed();
+    expect(mocks.get).toHaveBeenCalledWith("facebook-feed/feed.json", expect.objectContaining({
+      useCache: false,
+      headers: { "Accept-Encoding": "identity" },
+    }));
+    expect(mocks.put).toHaveBeenCalledWith("facebook-feed/feed.json", expect.any(String), expect.objectContaining({
+      ifMatch: '"strong-etag"',
+    }));
+  });
+
+  it("creates a missing feed without allowing an existing blob to be overwritten", async () => {
+    mocks.get.mockResolvedValue(null);
+    await refreshFacebookFeed();
+    expect(mocks.put).toHaveBeenCalledWith("facebook-feed/feed.json", expect.any(String), expect.objectContaining({
+      allowOverwrite: false,
+    }));
+    expect(mocks.put.mock.calls[0][2]).not.toHaveProperty("ifMatch");
+  });
+
+  it.each(['W/"compressed-etag"', ""])("refuses to refresh with an unusable ETag: %s", async (etag) => {
+    mocks.get.mockResolvedValue({ ...stored(), blob: { etag } });
+    await expect(refreshFacebookFeed()).rejects.toThrow("missing or weak ETag");
+    expect(mocks.latest).not.toHaveBeenCalled();
+    expect(mocks.put).not.toHaveBeenCalled();
+  });
+
+  it("refuses to remove a post with a weak ETag", async () => {
+    mocks.get.mockResolvedValue({ ...stored(), blob: { etag: 'W/"compressed-etag"' } });
+    await expect(removeFacebookPost(old.id)).rejects.toThrow("missing or weak ETag");
+    expect(mocks.put).not.toHaveBeenCalled();
+    expect(mocks.destroy).not.toHaveBeenCalled();
+  });
+
   it("keeps an ambiguous post and reports it without deleting its images", async () => {
     mocks.published.mockResolvedValue(null);
     const result = await refreshFacebookFeed();

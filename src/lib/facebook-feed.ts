@@ -36,20 +36,27 @@ async function readFeed(): Promise<{ feed: Feed; etag?: string }> {
     access: "private",
     token: env.BLOB_READ_WRITE_TOKEN,
     useCache: false,
+    headers: { "Accept-Encoding": "identity" },
   });
   if (!blob) return { feed: emptyFeed };
   if (!blob.stream) throw new Error("Facebook feed storage returned no content");
   return { feed: feedSchema.parse(await new Response(blob.stream).json()), etag: blob.blob.etag };
 }
 
+function assertWritableEtag(etag: string | undefined) {
+  if (etag !== undefined && (!etag || etag.startsWith("W/")))
+    throw new Error("Facebook feed storage returned a missing or weak ETag; refusing to overwrite");
+}
+
 async function writeFeed(feed: Feed, etag?: string) {
+  assertWritableEtag(etag);
   try {
     return await put(path, JSON.stringify(feed), {
       access: "private",
       token: env.BLOB_READ_WRITE_TOKEN,
       addRandomSuffix: false,
       abortSignal: AbortSignal.timeout(60_000),
-      ...(etag ? { ifMatch: etag } : { allowOverwrite: false }),
+      ...(etag !== undefined ? { ifMatch: etag } : { allowOverwrite: false }),
     });
   } catch (error) {
     if (etag && error instanceof BlobPreconditionFailedError) {
@@ -58,6 +65,7 @@ async function writeFeed(feed: Feed, etag?: string) {
           access: "private",
           token: env.BLOB_READ_WRITE_TOKEN,
           useCache: false,
+          headers: { "Accept-Encoding": "identity" },
         });
         if (current?.stream) await current.stream.cancel();
         const metadata = await head(path, { token: env.BLOB_READ_WRITE_TOKEN });
@@ -213,6 +221,7 @@ export async function refreshFacebookFeed() {
   const deadline = Date.now() + 60 * 60 * 1000;
   const abandoned = await cleanupAbandonedUploads();
   const current = await readFeed();
+  assertWritableEtag(current.etag);
   const source = await getLatestFacebookPosts();
   const sourceIds = new Set(source.map((post) => post.id));
   const oldest = source.length === 30 ? Date.parse(source[29].createdTime) : -Infinity;
@@ -298,6 +307,7 @@ export async function refreshFacebookFeed() {
 export async function removeFacebookPost(id: string) {
   if (!/^\d+_\d+$/.test(id)) throw new Error("Invalid Facebook post identifier");
   const { feed, etag } = await readFeed();
+  assertWritableEtag(etag);
   const post = feed.posts.find((item) => item.id === id);
   if (!post) throw new Error("Facebook post was not found");
   const next: Feed = {
