@@ -71,7 +71,12 @@ export function CategoryReportForm({ year, fingerprint, runners }: {
 }) {
   const [state, action, pending] = useActionState(saveCategoryCorrections, initialState);
   return (
-    <form action={action} className="mt-8">
+    <form action={action} className="mt-8" onInvalid={(event) => {
+      if (event.target instanceof HTMLElement &&
+          event.target === event.currentTarget.querySelector("input:invalid, select:invalid, textarea:invalid")) {
+        event.target.closest("details")?.setAttribute("open", "");
+      }
+    }}>
       <input type="hidden" name="year" value={year} />
       <input type="hidden" name="fingerprint" value={fingerprint} />
       <div className="flex flex-wrap items-end justify-between gap-4 border-y-2 border-[var(--ink)] py-4">
@@ -82,10 +87,12 @@ export function CategoryReportForm({ year, fingerprint, runners }: {
         </button>
       </div>
       <p role="status" aria-live="polite" className="mt-3 font-bold">{state.message}</p>
-      <div className="space-y-8">
+      <div className="space-y-3">
         {runners.map((runner) => (
-          <section key={runner.name} className="border border-[var(--line)] bg-white/40 p-5 md:p-6">
-            <h2 className="text-2xl font-bold">{runner.name}</h2>
+          <details key={runner.name} name="category-runners" className="border border-[var(--line)] bg-white/40 p-5 md:p-6">
+            <summary className="cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--ink)]">
+              <h2 className="inline text-2xl font-bold">{runner.name}</h2>
+            </summary>
             <div className="mt-4 divide-y divide-[var(--line)]">
               {runner.rows.map((row) => {
                 const observed = row.alternatives.filter((category) => category && category !== row.result.category);
@@ -107,16 +114,20 @@ export function CategoryReportForm({ year, fingerprint, runners }: {
                         {row.pwt !== undefined ? `${Math.round(row.pwt)}%` : "unavailable"}
                       </p>
                       {observed.length > 0 && <p className="mt-2 text-sm">Other categories for this name: {observed.join(", ")}</p>}
-                      <ul className="mt-2 text-sm text-red-800">
-                        {row.reasons.map((reason) => <li key={reason}>{reason}</li>)}
-                      </ul>
+                      {row.reasons.length > 0 ? (
+                        <ul className="mt-2 text-sm text-red-800">
+                          {row.reasons.map((reason) => <li key={reason}>{reason}</li>)}
+                        </ul>
+                      ) : (
+                        <p className="mt-2 text-sm text-stone-600">Shown for context; no inconsistency detected for this result.</p>
+                      )}
                     </div>
                     <CategoryChoice row={row} raceLabel={raceLabel} disabled={state.status === "success" || pending} />
                   </div>
                 );
               })}
             </div>
-          </section>
+          </details>
         ))}
       </div>
     </form>

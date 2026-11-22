@@ -19,6 +19,38 @@ describe("category report", () => {
     expect(report[0].rows[0].reasons).toContain("Different sex categories (different or missing clubs: possible name clash)");
   });
 
+  it("does not compare same-name results in the same race file, even for the same club", () => {
+    const calendar = [{ raceId: "A", Date: "2025-03-01" }];
+    expect(makeCategoryReport([result("A", "M40"), result("A", "F40")], calendar, "2025")).toEqual([]);
+    expect(makeCategoryReport([
+      result("A", "M40"), result("A", "M60"), result("A", "M50", { name: "Other Runner" }),
+    ], calendar, "2025")).toEqual([]);
+    expect(makeCategoryReport([
+      result("A", "M40"), result("A", "F40", { year: "2025-s" }),
+    ], calendar, "2025")).toHaveLength(1);
+  });
+
+  it("still compares other races without using a same-race namesake as suggestion evidence", () => {
+    const rows = [result("A", "F40"), result("A", "M40"), result("B", "M40")];
+    const report = makeCategoryReport(rows, [], "2025")[0].rows;
+    expect(report.map((row) => row.index)).toEqual([0, 1, 2]);
+    expect(report[1].reasons).toEqual([]);
+    expect(report[0].suggestion).toBeUndefined();
+    expect(report[0].alternatives).toEqual(["F40", "M40"]);
+    const distinctCategories = makeCategoryReport([
+      result("A", "F40"), result("A", "M60"), result("B", "M40"),
+    ], [], "2025")[0].rows;
+    expect(distinctCategories.find((row) => row.index === 0)?.alternatives).toEqual(["F40", "M40"]);
+  });
+
+  it("does not count two namesakes in one race as two corroborating results", () => {
+    const report = makeCategoryReport([
+      result("A", "F40"), result("A", "M40", { name: "Other Runner" }),
+      result("B", "M40"), result("B", "M40", { position: 2 }),
+    ], [], "2025")[0].rows;
+    expect(report.find((row) => row.index === 0)?.suggestion).toBeUndefined();
+  });
+
   it("accepts a plausible birthday transition but reports reversed dates", () => {
     const calendar = [{ raceId: "A", Date: "2025-03-01" }, { raceId: "B", Date: "2025-08-01" }];
     const other = result("A", "M50", { name: "Another Runner" });
@@ -46,15 +78,14 @@ describe("category report", () => {
     expect(makeCategoryReport([result("A", "M40"), result("B", "M60")], [], "2025")).toEqual([]);
   });
 
-  it("flags a lower category when the higher band exists but its timing is unknown or backwards", () => {
+  it("accepts a possible birthday when dates are unknown, but flags backwards dates", () => {
     const rows = [
       result("Older", "M65"),
       result("Narrow", "M60"),
       result("Narrow", "M65", { name: "Another Runner" }),
     ];
-    const undated = makeCategoryReport(rows, [], "2025");
-    expect(undated[0].rows.map((row) => row.result.raceId)).toEqual(["Narrow"]);
-    expect(undated[0].rows[0].reasons[0]).toContain("birthday timing is unknown");
+    expect(makeCategoryReport(rows, [], "2025")).toEqual([]);
+    expect(makeCategoryReport(rows, [{ raceId: "Older", Date: "2025-02-01" }], "2025")).toEqual([]);
     const backwards = [{ raceId: "Older", Date: "2025-02-01" }, { raceId: "Narrow", Date: "2025-09-01" }];
     expect(makeCategoryReport(rows, backwards, "2025")[0].rows[0].reasons[0]).toContain("backwards");
     const birthday = [{ raceId: "Narrow", Date: "2025-02-01" }, { raceId: "Older", Date: "2025-09-01" }];
@@ -73,13 +104,38 @@ describe("category report", () => {
   it("does not invent dates for races with several dates or result files", () => {
     const rows = [result("A", "M50"), result("B", "M40"), result("B", "M50", { name: "Other Runner" })];
     const calendar = [{ raceId: "A", Date: "2025-01-01" }, { raceId: "A", Date: "2025-02-01" }, { raceId: "B", Date: "2025-04-01" }];
-    const multipleDates = makeCategoryReport(rows, calendar, "2025")[0].rows;
-    expect(multipleDates.map((row) => row.result.raceId)).toEqual(["B"]);
-    expect(multipleDates[0].reasons[0]).toContain("birthday timing is unknown");
-    const multipleFiles = makeCategoryReport([...rows, result("A", "M50", { year: "2025-s", name: "Third Runner" })],
-      [{ raceId: "A", Date: "2025-01-01" }, { raceId: "B", Date: "2025-04-01" }], "2025")[0].rows;
-    expect(multipleFiles.map((row) => row.result.raceId)).toEqual(["B"]);
-    expect(multipleFiles[0].reasons[0]).toContain("birthday timing is unknown");
+    expect(makeCategoryReport(rows, calendar, "2025")).toEqual([]);
+    const clearDates = [{ raceId: "A", Date: "2025-01-01" }, { raceId: "B", Date: "2025-04-01" }];
+    expect(makeCategoryReport(rows, clearDates, "2025")[0].rows[0].reasons[0]).toContain("backwards");
+    expect(makeCategoryReport([...rows, result("A", "M50", { year: "2025-s", name: "Third Runner" })],
+      clearDates, "2025")).toEqual([]);
+  });
+
+  it("shows all results, including context, for an impossible undated age range", () => {
+    const rows = [
+      result("A", "M50"), result("A", "M60", { name: "Other Runner" }),
+      result("B", "M70"), result("C", "M"), result("D", "M50"),
+    ];
+    const runner = makeCategoryReport(rows, [], "2025")[0];
+    expect(runner.rows.map((row) => row.result.raceId)).toEqual(["A", "B", "C", "D"]);
+    expect(runner.rows[0].reasons[0]).toContain("more than one year apart");
+    expect(runner.rows[1].reasons[0]).toContain("more than one year apart");
+    expect(runner.rows[2].reasons).toEqual([]);
+    expect(runner.rows[3].reasons).toEqual([]);
+    const html = renderToStaticMarkup(createElement(CategoryReportForm, {
+      year: "2025", fingerprint: "test", runners: [runner],
+    }));
+    expect(html).toContain("Shown for context; no inconsistency detected for this result.");
+    expect(html).toContain("Decision for C");
+  });
+
+  it("does not flag an undated M50 to M60 transition even when M60 is used in each race", () => {
+    const rows = [
+      result("A", "M50"), result("A", "M60", { name: "Other Runner" }),
+      result("B", "M50"), result("B", "M60", { name: "Other Runner" }),
+      result("C", "M60"),
+    ];
+    expect(makeCategoryReport(rows, [], "2025")).toEqual([]);
   });
 
   it("orders each runner's dated results chronologically, followed by undated results", () => {
@@ -187,6 +243,7 @@ describe("category report", () => {
     expect(text).not.toContain("Race0 2025");
     expect(text).toContain("Decision for Normans Law");
     expect(text).not.toContain("Usually M, F, A or NB");
+    expect(html).toMatch(/<details name="category-runners"[^>]*><summary[^>]*><h2[^>]*>Alex Runner<\/h2><\/summary>/);
     expect(html).toMatch(/<time datetime="2025-03-28">28 March<\/time>/i);
   });
 
@@ -263,9 +320,7 @@ describe("category report", () => {
       result("Narrow", "M60"),
       result("Narrow", "M65", { name: "Another Runner" }),
     ];
-    const report = makeCategoryReport(rows, [], "2025");
-    expect(report[0].rows.map((row) => row.result.raceId)).toEqual(["Narrow"]);
-    expect(report[0].rows.find((row) => row.result.raceId === "Narrow")?.suggestion).toBe("M65");
+    expect(makeCategoryReport(rows, [], "2025")).toEqual([]);
     const dated = makeCategoryReport(rows, [
       { raceId: "Older1", Date: "2025-01-01" },
       { raceId: "Older2", Date: "2025-02-01" },
@@ -273,6 +328,8 @@ describe("category report", () => {
     ], "2025");
     expect(dated[0].rows.find((row) => row.result.raceId === "Older1")?.suggestion).toBeUndefined();
     expect(dated[0].rows.find((row) => row.result.raceId === "Narrow")?.suggestion).toBe("M65");
+    expect(dated[0].rows.find((row) => row.result.raceId === "Broad1")?.reasons).toEqual([]);
+    expect(dated[0].rows.find((row) => row.result.raceId === "Broad1")?.suggestion).toBeUndefined();
   });
 });
 

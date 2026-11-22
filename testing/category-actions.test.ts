@@ -70,6 +70,17 @@ describe("saving category corrections", () => {
     expect(mocks.commitFilesAtomically.mock.calls[0][2][0].content).toContain("Alex Runner,F55");
   });
 
+  it("allows an editor to correct a result shown for context", async () => {
+    const report = await mocks.loadCategoryReport();
+    report.runners[0].rows[1].reasons = [];
+    delete report.runners[0].rows[1].suggestion;
+    const data = form();
+    data.set("change-1", "other");
+    data.set("other-1", "M50");
+    expect((await saveCategoryCorrections({ status: "idle" }, data)).status).toBe("success");
+    expect(mocks.commitFilesAtomically.mock.calls[0][2][0].path).toBe("races/B/2025.csv");
+  });
+
   it.each(["F 55+", "NB/40", "F_40", "M-40", "=legacy", "F".repeat(41)])(
     "allows the explicitly approved non-standard category %s",
     async (category) => {

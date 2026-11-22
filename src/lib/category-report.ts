@@ -135,6 +135,7 @@ export function makeCategoryReport(
       if (!aParts) continue;
       for (let j = i + 1; j < rows.length; j++) {
         const b = rows[j];
+        if (raceKey(a.result) === raceKey(b.result)) continue;
         const bParts = categoryParts(b.result.category);
         if (!bParts) continue;
         const sameClub = Boolean(a.result.club?.trim()) &&
@@ -143,7 +144,6 @@ export function makeCategoryReport(
         const aBand = band(a.result.category, [...(categories.get(raceKey(a.result)) ?? [])]);
         const bBand = band(b.result.category, [...(categories.get(raceKey(b.result)) ?? [])]);
         let reason: string | undefined;
-        let flagged = [a, b];
         if (aParts.sex !== bParts.sex) {
           reason = `Different sex categories (${confidence})`;
         } else if (aBand && bBand) {
@@ -160,14 +160,9 @@ export function makeCategoryReport(
           }
           if (!reason && (aBand.min > bBand.max + 1 || bBand.min > aBand.max + 1))
             reason = `Age bands are more than one year apart (${confidence})`;
-          if (!reason && (!aDate || !bDate) &&
-              (aBand.max < bBand.min || bBand.max < aBand.min)) {
-            reason = `Different age bands; birthday timing is unknown (${confidence})`;
-            flagged = [aBand.max < bBand.min ? a : b];
-          }
         }
         if (reason) {
-          for (const row of flagged) {
+          for (const row of [a, b]) {
             const set = reasons.get(row.index) ?? new Set<string>();
             set.add(reason);
             reasons.set(row.index, set);
@@ -176,14 +171,16 @@ export function makeCategoryReport(
       }
     }
     if (!reasons.size) continue;
-    const alternatives = [...new Set(rows.map(({ result }) => result.category))].sort();
     report.push({
       name: rows[0].result.name,
-      rows: rows.filter(({ index }) => reasons.has(index)).map(({ result, index }) => {
+      rows: rows.map(({ result, index }) => {
         const raceCategories = [...(categories.get(raceKey(result)) ?? [])].sort();
+        const comparableRows = rows.filter((other) =>
+          other.index === index || raceKey(other.result) !== raceKey(result));
+        const alternatives = [...new Set(comparableRows.map(({ result }) => result.category))].sort();
         const club = result.club?.trim().toLowerCase();
         const sameClubRows = club
-          ? rows.filter((other) => other.result.club?.trim().toLowerCase() === club)
+          ? comparableRows.filter((other) => other.result.club?.trim().toLowerCase() === club)
           : [];
         const currentParts = categoryParts(result.category);
         const candidates = [...new Set(sameClubRows.map((other) => other.result.category))]
@@ -205,12 +202,16 @@ export function makeCategoryReport(
                 return raceParts?.sex === currentParts.sex && raceParts.age === higherAge && !raceParts.junior;
               });
             });
-            const candidateCount = comparable.filter(({ result: other }) => other.category === category).length;
-            const currentCount = comparable.filter(({ result: other }) => other.category === result.category).length;
+            const candidateCount = new Set(comparable
+              .filter(({ result: other }) => other.category === category)
+              .map(({ result: other }) => raceKey(other))).size;
+            const currentCount = new Set(comparable
+              .filter(({ result: other }) => other.category === result.category)
+              .map(({ result: other }) => raceKey(other))).size;
             return candidateCount >= 2 && candidateCount > currentCount
               ? [{ category, count: candidateCount }] : [];
           }).sort((a, b) => b.count - a.count);
-        const suggestion = candidates[0] && candidates[0].count > (candidates[1]?.count ?? 0)
+        const suggestion = reasons.has(index) && candidates[0] && candidates[0].count > (candidates[1]?.count ?? 0)
           ? candidates[0].category : undefined;
         const winnerTime = winnerTimes.get(raceKey(result));
         const runnerTime = timeInSeconds(result.time);
