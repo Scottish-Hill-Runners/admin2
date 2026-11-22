@@ -103,6 +103,43 @@ export async function commitFiles(
   return { commitUrl: result.html_url, sha: result.commit?.sha };
 }
 
+export async function getStagingHead(token: string) {
+  const { owner, repo } = repository();
+  const response = await client(token).git.getRef({
+    owner, repo, ref: `heads/${env.CONTENT_STAGING_BRANCH}`,
+  });
+  return response.data.object.sha;
+}
+
+export async function commitFilesAtomically(
+  token: string,
+  baseSha: string,
+  files: Array<{ path: string; content: string }>,
+  message: string,
+) {
+  const { owner, repo } = repository();
+  const api = client(token);
+  const base = await api.git.getCommit({ owner, repo, commit_sha: baseSha });
+  const tree = await api.git.createTree({
+    owner, repo,
+    base_tree: base.data.tree.sha,
+    tree: files.map((file) => ({
+      path: normalizeRepoPath(file.path),
+      mode: "100644" as const,
+      type: "blob" as const,
+      content: file.content,
+    })),
+  });
+  const commit = await api.git.createCommit({
+    owner, repo, message, tree: tree.data.sha, parents: [baseSha],
+  });
+  await api.git.updateRef({
+    owner, repo, ref: `heads/${env.CONTENT_STAGING_BRANCH}`,
+    sha: commit.data.sha, force: false,
+  });
+  return { sha: commit.data.sha };
+}
+
 export async function publishStagingToLive(token: string) {
   const { owner, repo } = repository();
   const api = client(token);

@@ -15,6 +15,33 @@ npm run dev
 
 The implementation specification is maintained in `ADMIN2-SPEC.md` during initial development.
 
+## Runner category review
+
+The review desk's Runner categories report checks a year's published results for
+sex and age-band inconsistencies. It compares same-name runners across clubs as
+possible matches; identical names need not mean the same person. Age bands are
+approximated from the categories observed at each race, and calendar dates are
+used only when the race and result file have an unambiguous date. Open and
+unrecognised categories do not establish an age. A lower age category can cover
+an older runner when that race does not use the higher category; adjacent,
+non-overlapping bands flag the lower result as uncertain when dates are missing.
+Each runner's dated races are shown chronologically, followed by races without
+an unambiguous date. Race names come from the year's calendar or published race
+metadata, falling back to the ID if neither has a name. PWT is the runner's
+time as a percentage of the overall winner's time in the same race and result
+file; it is unavailable if either time or the winner cannot be determined.
+
+No changes are preselected. A category is suggested only when at least two
+same-name, same-club results agree, it has more comparable results than the
+current category, and it is already used in the race. Lower categories in races
+without the higher category are not counted against it. Editors may also enter
+another category; the report warns, without blocking a save, if it is new to
+that race or does not match M, F, A or NB optionally followed by two digits.
+The app verifies the current saved results before making one commit on the
+staging branch. If a source row cannot be matched uniquely, including when a
+published name differs from the source, nothing is committed. Use Publish to
+make saved changes live.
+
 ## Facebook feed caching
 
 The public feed removes `fbclid` tracking parameters from links in messages,
