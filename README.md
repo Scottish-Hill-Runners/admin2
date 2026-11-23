@@ -15,6 +15,18 @@ npm run dev
 
 The implementation specification is maintained in `ADMIN2-SPEC.md` during initial development.
 
+## Missing results
+
+The review desk's Missing results report compares past calendar dates with the
+published results for a selected year (defaulting to the current UK year).
+Today's races are excluded. Results are matched by race ID, so any result for
+an ID counts for all its calendar dates in that year. Races without an ID
+cannot be checked and are listed separately. Each missing race links to its
+public race page and shows available organiser and website details. Organiser
+email links open a prefilled request for the results. Failed
+contact lookups are flagged; failures to load the calendar or results prevent
+the report from being produced.
+
 ## Runner category review
 
 The review desk's Runner categories report checks a year's published results for

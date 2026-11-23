@@ -44,6 +44,9 @@ export default async function HomePage() {
           <Link href="/category-check" className="border-2 border-[var(--ink)] p-5 font-bold">
             Runner categories
           </Link>
+          <Link href="/missing-results" className="border-2 border-[var(--ink)] p-5 font-bold">
+            Missing results
+          </Link>
         </div>
         <form
           action={async () => {

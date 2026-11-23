@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { fetchPublishedJson } from "@/lib/published-json";
 
 const resultSchema = z.object({
   raceId: z.string(),
@@ -233,23 +234,14 @@ export function makeCategoryReport(
   return report.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-async function fetchJson(url: string): Promise<unknown> {
-  const response = await fetch(url, { cache: "no-store" });
-  if (!response.ok) throw new Error(`Could not load ${url} (HTTP ${response.status}).`);
-  const bytes = Buffer.from(await response.arrayBuffer());
-  const data = bytes[0] === 0x1f && bytes[1] === 0x8b
-    ? (await import("node:zlib")).gunzipSync(bytes) : bytes;
-  return JSON.parse(data.toString("utf8"));
-}
-
 export async function loadCategoryReport(year: string) {
   if (!/^\d{4}$/.test(year)) throw new Error("Enter a four-digit year.");
-  const data = await fetchJson(`https://www.scottishhillrunners.uk/results/${year}.json.gz`);
+  const data = await fetchPublishedJson(`https://www.scottishhillrunners.uk/results/${year}.json.gz`);
   const results = z.array(resultSchema).parse(data);
   let calendar: CalendarEntry[] = [];
   let calendarWarning: string | undefined;
   try {
-    calendar = calendarSchema.parse(await fetchJson("https://www.scottishhillrunners.uk/calendar.json.gz"));
+    calendar = calendarSchema.parse(await fetchPublishedJson("https://www.scottishhillrunners.uk/calendar.json.gz"));
   } catch (error) {
     console.error("Could not load race calendar", error);
     calendarWarning = "Race dates could not be loaded; date-order checks were skipped.";
@@ -257,7 +249,7 @@ export async function loadCategoryReport(year: string) {
   let raceNames = new Map<string, string>();
   let raceNamesWarning: string | undefined;
   try {
-    const metadata = raceMetadataSchema.parse(await fetchJson("https://www.scottishhillrunners.uk/results/races.json.gz"));
+    const metadata = raceMetadataSchema.parse(await fetchPublishedJson("https://www.scottishhillrunners.uk/results/races.json.gz"));
     raceNames = new Map(Object.entries(metadata).flatMap(([id, info]) =>
       info.title?.trim() ? [[id, info.title.trim()]] : [],
     ));
