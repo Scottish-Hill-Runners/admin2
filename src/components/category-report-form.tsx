@@ -108,7 +108,7 @@ export function CategoryReportForm({ year, fingerprint, runners }: {
                       </p>
                       <p className="mt-1">Current category: <strong>{row.result.category}</strong></p>
                       <p className="mt-1 text-sm">
-                        {row.result.club || "Club not recorded"} · Position {row.result.position ?? "unknown"}
+                        <b>{row.result.club || "Club not recorded"}</b> · Position {row.result.position ?? "unknown"}
                         {" · Time "}{row.result.time?.trim() || "unavailable"}
                         {" · "}<abbr title="Percentage of the overall winner's time">PWT</abbr>{" "}
                         {row.pwt !== undefined ? `${Math.round(row.pwt)}%` : "unavailable"}
